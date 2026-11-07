@@ -41,7 +41,7 @@ export function Login({ onLogin }: { onLogin: (user: User) => void }) {
           <p className="form-note">Demo accounts: <b>faculty@phact.demo</b> and <b>admin@phact.demo</b>. Ask your team lead for the passwords.</p>
         ) : (
           <>
-            <p className="form-note"><a href="/sample-syllabus.docx" download>Download a sample syllabus</a> to try the upload and review workflow. Use the role switcher to explore administrator approval.</p>
+            <p className="form-note"><a href={`${import.meta.env.BASE_URL}sample-syllabus.docx`} download>Download a sample syllabus</a> to try the upload and review workflow. Use the role switcher to explore administrator approval.</p>
             <div className="or"><span>Choose a demo account</span></div>
             <div className="demo-accounts">{DEMO_ACCOUNTS.map((account) => <button key={account.email} type="button" className="demo-account" onClick={() => signIn(account.email, "mock")}><span>{account.name.replace(/^Dr\.\s*/, "").split(" ").map((p) => p[0]).join("").slice(0, 2)}</span><div><b>{account.label}</b><small>{account.name} · {account.email}</small></div><Icon name="arrow" size={15} /></button>)}</div>
           </>

@@ -150,7 +150,7 @@ export function BrandMark({ full = false }: { full?: boolean }) {
   return (
     <img
       className={`brand-mark ${full ? "brand-mark-full" : ""}`}
-      src="/branding/phact-logo-2.png"
+      src={`${import.meta.env.BASE_URL}branding/phact-logo-2.png`}
       alt="PHACT - Public Health AI Curriculum Transformation Platform"
     />
   )
