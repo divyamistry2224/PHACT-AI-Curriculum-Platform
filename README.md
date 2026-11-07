@@ -6,7 +6,13 @@ PHACT helps public health educators review syllabi, identify competency gaps, an
 
 Built for **AWS Breaking Barriers 2026** by **Team 34 — Health PHACTory**.
 
-[Live demo](https://donsewldp7xyg.cloudfront.net/) · [Presentation](docs/presentation/PHACT_Presentation_v13.pptx) · [API contract](docs/api/PHACT_API_Contract.xlsx)
+[Presentation](docs/presentation/PHACT_Presentation_v13.pptx) · [API contract](docs/api/PHACT_API_Contract.xlsx)
+
+## Demo availability
+
+PHACT was deployed live on AWS during the three-day AWS Breaking Barriers 2026 hackathon. The temporary hackathon AWS session has ended, and the hosted demo is no longer available.
+
+You can run the application locally at **[http://localhost:8443/](http://localhost:8443/)** using the instructions below. This address works on your own computer after starting the app; it is not a public hosted demo. Local mode uses sample data and simulated AI responses without the expired AWS environment.
 
 ## Features
 
@@ -73,14 +79,17 @@ The queued review workers support the AgentCore runtime through a native review 
 
 ## Run locally
 
-Requires Node.js 22.12+ and pnpm.
+Requires Node.js 22.12+ with npm. Run these commands in Terminal:
 
 ```bash
-cd ASPPH/PHACT/frontend
+git clone https://github.com/divyamistry2224/PHACT-AI-Curriculum-Platform.git
+cd PHACT-AI-Curriculum-Platform/ASPPH/PHACT/frontend
 cp .env.example .env.local
-pnpm install --frozen-lockfile
-pnpm dev
+npx --yes pnpm install --frozen-lockfile
+npx --yes pnpm dev
 ```
+
+Open **http://localhost:8443/** in your browser and keep Terminal running. If Vite reports another port, use the URL it prints. If you already cloned the repository, start from its `ASPPH/PHACT/frontend` folder and skip the clone command.
 
 The default configuration uses mock data without AWS. See the [application README](ASPPH/PHACT/README.md) for live API configuration, backend tests, and deployment.
 
