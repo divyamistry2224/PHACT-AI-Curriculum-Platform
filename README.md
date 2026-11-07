@@ -4,17 +4,19 @@
 
 I worked with my team to build PHACT, an application that helps public health educators review syllabi, identify competency gaps, and integrate AI responsibly. Faculty can review suggested changes, save revised versions, and submit a syllabus for administrator approval.
 
-I developed this project with **Team 34 — Health PHACTory** during **AWS Breaking Barriers 2026**.
+Built during **AWS Breaking Barriers 2026** with **Team 34 — Health PHACTory**.
 
 [Presentation](docs/presentation/PHACT_Presentation_v13.pptx) · [API contract](docs/api/PHACT_API_Contract.xlsx)
 
 ## Demo availability
 
-My team and I deployed PHACT live on AWS during the three-day AWS Breaking Barriers 2026 hackathon. Our temporary AWS session has since ended, so the hosted demo is no longer available.
+PHACT was deployed live on AWS during the three-day AWS Breaking Barriers 2026 hackathon. The temporary AWS session has since ended, so the hosted demo is no longer available.
 
-I now run PHACT locally at **[http://localhost:8443/](http://localhost:8443/)** to demonstrate the interface and workflows. You can run it on your computer using the instructions below. The local demo uses sample data and simulated AI responses; the localhost link works only after you start the app on your own computer.
+**Local demo: [http://localhost:8443/](http://localhost:8443/)**
 
-## What we built
+Follow the setup instructions below to start PHACT on your computer. The localhost address works while the app is running locally. This demo uses sample data and simulated AI responses.
+
+## Features
 
 - Upload a PDF, DOCX, or pasted syllabus.
 - Review coverage of the 22 CEPH foundational competencies.
@@ -28,7 +30,7 @@ I now run PHACT locally at **[http://localhost:8443/](http://localhost:8443/)** 
 
 ![PHACT architecture](docs/architecture/architecture.png)
 
-We hosted the React app on S3 through CloudFront and used Cognito for sign-in. We used API Gateway and Python Lambda functions for uploads and reviews, SQS for background analysis, and Amazon Bedrock for retrieval and recommendations. DynamoDB stores review state, S3 stores syllabus versions, and Comprehend and Bedrock Guardrails support personal data handling and content checks.
+The AWS deployment used S3 and CloudFront to host the React app, with Cognito for sign-in. API Gateway and Python Lambda functions handle uploads and reviews, SQS queues background analysis, and Amazon Bedrock supports retrieval and recommendations. DynamoDB stores review state, S3 stores syllabus versions, and Comprehend and Bedrock Guardrails support personal data handling and content checks.
 
 [Editable architecture diagram](docs/architecture/architecture.drawio)
 
@@ -95,6 +97,6 @@ The default configuration uses mock data without AWS. See the [application READM
 
 ## Project status
 
-I built PHACT with my team as a working application for AWS Breaking Barriers 2026, with faculty and administrator workflows, background reviews, and version history. I have included the application code, RAG module, architecture, and presentation in this repository. The current test suites cover **95 backend tests and 34 RAG tests**, using mocked AWS services and scripted agent responses.
+PHACT is a working application with faculty and administrator workflows, background reviews, and version history. This repository includes the application code, RAG module, architecture, and presentation. The current test suites cover **95 backend tests and 34 RAG tests**, using mocked AWS services and scripted agent responses.
 
 See [implementation status](docs/IMPLEMENTATION_STATUS.md) for current features and planned work.
