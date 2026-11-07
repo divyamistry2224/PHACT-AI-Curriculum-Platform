@@ -1,4 +1,4 @@
-# Architecture: implemented prototype and earlier plans
+# Application architecture
 
 The image and editable draw.io file were copied from the source repository. The architecture image pasted in chat was not available as a separate downloadable image file; the repository's diagram and the supplied presentation are included instead.
 
@@ -16,6 +16,7 @@ flowchart TD
   Q --> W[Review Lambda workers]
   W --> KB[Bedrock Knowledge Bases: CEPH + approved syllabi]
   W --> M[Claude via Bedrock]
+  W --> AC[Configured AgentCore runtime / Strands agents]
   W --> G[Comprehend + Guardrails]
   W --> S
   W --> D
@@ -33,7 +34,7 @@ Authority: `ASPPH/PHACT/template.yaml`, `backend/functions/`, and `backend/share
 
 The user supplied a CDK/FastAPI/Strands/AgentCore scaffold and OIDC Hosted UI snippets. Those differ from the inspected implementation: SAM infrastructure, individual Lambda handlers, direct Bedrock calls, and Cognito `USER_PASSWORD_AUTH` with token refresh. They are retained as requirements context, not inserted into the application.
 
-The separate RAG notes describe a reusable Retrieve + Converse module and async adapter. The `feat/phact-agents-rag` branch supplies a separate three-agent runtime and corpus CLI, now included under `ASPPH/PHACT/agents/`. It is not wired into the SAM workers or verified as deployed.
+The separate RAG notes describe a reusable Retrieve + Converse module and async adapter. The `feat/phact-agents-rag` branch supplies a separate three-agent runtime and corpus CLI, now included under `ASPPH/PHACT/agents/`. The SAM workers now support this runtime through `backend/shared/phact/agentcore.py`; `AgentCoreRuntimeArn` selects it at deployment.
 
 ## Review lifecycle
 

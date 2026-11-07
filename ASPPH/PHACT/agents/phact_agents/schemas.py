@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from .doc_check import DocCheckResult
 
@@ -136,6 +136,7 @@ class RevisedSyllabus(BaseModel):
 
 
 class AnalysisResult(BaseModel):
+    samReview: dict | None = None
     schemaVersion: str
     jobId: str
     syllabusId: str
@@ -154,3 +155,52 @@ class AnalysisResult(BaseModel):
     documentCheck: DocCheckResult | None = None
     piiRedactions: int = 0
     timingsMs: dict[str, int] = Field(default_factory=dict)
+
+
+class SamCompetencyGrade(BaseModel):
+    code: str = Field(pattern=r"^D2-([1-9]|1[0-9]|2[0-2])$")
+    status: Literal["ADDRESSED", "PARTIAL", "NOT_ADDRESSED"]
+    evidence: str
+    rationale: str
+
+
+class SamCompetencyChange(BaseModel):
+    section: str
+    change: str
+    reason: str
+    competencyCodes: list[str]
+    excerpts: list[str]
+
+
+class SamCompetencyDetails(BaseModel):
+    competencies: list[SamCompetencyGrade]
+    changes: list[SamCompetencyChange]
+
+    @model_validator(mode="after")
+    def complete_grades(self):
+        if len(self.competencies) != 22 or {row.code for row in self.competencies} != {f"D2-{n}" for n in range(1, 23)}:
+            raise ValueError("Every CEPH competency must be assessed exactly once")
+        return self
+
+
+class SamModernizationRecommendation(BaseModel):
+    title: str
+    category: Literal["CONTENT_ENHANCEMENT", "TEACHING_METHODS", "ASSESSMENT_TOOLS"]
+    approach: Literal["INTEGRATE_AI", "AI_RESISTANT"]
+    target: str
+    recommendation: str
+    rationale: str
+    peerExampleIds: list[str]
+    excerpts: list[str]
+
+
+class SamModernizationDetails(BaseModel):
+    recommendations: list[SamModernizationRecommendation]
+
+
+class SamCompetencySynthesis(SynthesisOutput):
+    sam_review: SamCompetencyDetails
+
+
+class SamModernizationSynthesis(SynthesisOutput):
+    sam_review: SamModernizationDetails

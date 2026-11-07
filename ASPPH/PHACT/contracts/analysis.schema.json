@@ -339,6 +339,19 @@
   }
  },
  "properties": {
+  "samReview": {
+   "anyOf": [
+    {
+     "additionalProperties": true,
+     "type": "object"
+    },
+    {
+     "type": "null"
+    }
+   ],
+   "default": null,
+   "title": "Samreview"
+  },
   "schemaVersion": {
    "title": "Schemaversion",
    "type": "string"

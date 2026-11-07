@@ -4,6 +4,11 @@ Description: >-
   PHACT (Public Health AI Curriculum Transformation) MVP. Phase 1: auth, data, API, upload, and read.
 
 Parameters:
+  AgentCoreRuntimeArn:
+    Type: String
+    Default: ""
+    AllowedPattern: '^$|^arn:[^:]+:bedrock-agentcore:[^:]+:[0-9]{12}:runtime/[A-Za-z0-9_-]+$'
+    Description: Existing AgentCore runtime with SAM review support. Empty keeps direct Bedrock workers.
   ModelId:
     Type: String
     Default: us.anthropic.claude-sonnet-4-5-20250929-v1:0
@@ -47,6 +52,7 @@ Parameters:
       emails that address a verification link that must be clicked once.
 
 Conditions:
+  HasAgentCoreRuntime: !Not [!Equals [!Ref AgentCoreRuntimeArn, ""]]
   HasNotificationSender: !Not [!Equals [!Ref NotificationSenderEmail, ""]]
 
 Globals:
@@ -787,8 +793,18 @@ Resources:
       Timeout: 600
       Environment:
         Variables:
+          AGENTCORE_RUNTIME_ARN: !Ref AgentCoreRuntimeArn
           CEPH_KB_ID: !Ref CephKnowledgeBase
       Policies:
+        - !If
+          - HasAgentCoreRuntime
+          - Statement:
+              - Effect: Allow
+                Action: bedrock-agentcore:InvokeAgentRuntime
+                Resource:
+                  - !Ref AgentCoreRuntimeArn
+                  - !Sub "${AgentCoreRuntimeArn}/runtime-endpoint/*"
+          - !Ref AWS::NoValue
         - DynamoDBCrudPolicy:
             TableName: !Ref SyllabiTable
         - DynamoDBCrudPolicy:
@@ -829,8 +845,18 @@ Resources:
       Timeout: 600
       Environment:
         Variables:
+          AGENTCORE_RUNTIME_ARN: !Ref AgentCoreRuntimeArn
           SYLLABI_KB_ID: !Ref SyllabiKnowledgeBase
       Policies:
+        - !If
+          - HasAgentCoreRuntime
+          - Statement:
+              - Effect: Allow
+                Action: bedrock-agentcore:InvokeAgentRuntime
+                Resource:
+                  - !Ref AgentCoreRuntimeArn
+                  - !Sub "${AgentCoreRuntimeArn}/runtime-endpoint/*"
+          - !Ref AWS::NoValue
         - DynamoDBCrudPolicy:
             TableName: !Ref SyllabiTable
         - DynamoDBCrudPolicy:

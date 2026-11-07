@@ -1,6 +1,6 @@
 # PHACT agents: three-agent RAG runtime on Bedrock AgentCore
 
-This folder holds the AI half of PHACT: the knowledge-base corpus, the AgentCore runtime with three Strands agents, and the post-processing Lambda. It is a separate implementation from the current SAM review workers. The current React/API workflow does not invoke this runtime; `phact_agents/invoke_client.py` provides a caller helper for integration.
+This folder holds the AI half of PHACT: the knowledge-base corpus, the AgentCore runtime with three Strands agents, and the post-processing Lambda. The SAM review workers invoke this runtime through `backend/shared/phact/agentcore.py` when `AgentCoreRuntimeArn` is configured. The runtime returns native review details for the existing faculty decision and versioning workflow. See [application configuration](../../../docs/AGENTCORE.md).
 
 ## Architecture
 
@@ -112,7 +112,7 @@ python -m venv .venv
 
 | Check | State |
 |---|---|
-| Unit tests (30): concurrency of Agents 1/2, citation validation, PII before model, guardrail block, wrong-document rejection / override / fallback / check-only mode, partial failure, S3/Lambda/DynamoDB calls, DOCX/PDF rendering, corpus build | Pass locally with fake AWS clients and a scripted agent runner |
+| Unit tests (34): concurrency of Agents 1/2, citation validation, PII before model, guardrail block, wrong-document rejection / override / fallback / check-only mode, partial failure, S3/Lambda/DynamoDB calls, DOCX/PDF rendering, corpus build | Pass locally with fake AWS clients and a scripted agent runner |
 | Wrong-document heuristics on real files | All 6 syllabi in `Data/Approved Syllabi` pass; CHW competencies and a workforce fact sheet are rejected; the ASPPH AI Framework passes heuristics alone, which is why the classifier decides non-obvious cases |
 | Corpus build from `ASPPH/Data` | 21 sources built (competency 181 pages, syllabus 16 pages); 4 skipped (see below) |
 | Strands tool specs and AgentCore entrypoint import | Checked locally |

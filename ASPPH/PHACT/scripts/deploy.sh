@@ -3,6 +3,7 @@
 #
 # Environment variables:
 #   AWS_PROFILE              Profile for the sandbox account (optional if your default works)
+#   PHACT_AGENTCORE_RUNTIME_ARN  Existing AgentCore runtime with SAM review support (optional)
 #   PHACT_MODEL_ID           Claude inference profile ID (default: template default)
 #   PHACT_FACULTY_PASSWORD   Password for the demo faculty user (skip user creation if unset)
 #   PHACT_ADMIN_PASSWORD     Password for the demo admin user (skip user creation if unset)
@@ -38,6 +39,7 @@ sam build
 
 step "Deploying stack $STACK_NAME to $REGION (sam deploy)"
 OVERRIDES=()
+[[ -n "${PHACT_AGENTCORE_RUNTIME_ARN:-}" ]] && OVERRIDES+=("AgentCoreRuntimeArn=$PHACT_AGENTCORE_RUNTIME_ARN")
 [[ -n "${PHACT_MODEL_ID:-}" ]] && OVERRIDES+=("ModelId=$PHACT_MODEL_ID")
 [[ -n "${PHACT_ALLOWED_ORIGIN:-}" ]] && OVERRIDES+=("AllowedOrigin=$PHACT_ALLOWED_ORIGIN")
 [[ -n "${PHACT_NOTIFICATION_SENDER:-}" ]] && OVERRIDES+=("NotificationSenderEmail=$PHACT_NOTIFICATION_SENDER")

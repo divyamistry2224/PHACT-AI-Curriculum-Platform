@@ -48,7 +48,7 @@ ASPPH/PHACT/
   tests/                Backend tests and local browser harness
   data/                 Competency references and synthetic syllabi
 ASPPH/Data/             Reference documents
-prototypes/frontend/   Earlier frontend implementation
+archive/frontend/   Earlier frontend implementation
 ASPPH/PHACT UX-UI Design/
 docs/
   architecture/         Architecture diagram and editable source
@@ -69,7 +69,7 @@ The [agents module](ASPPH/PHACT/agents/) contains the three-agent Strands workfl
 - [Analysis contract](ASPPH/PHACT/contracts/analysis.schema.json)
 - [Setup and tests](ASPPH/PHACT/agents/README.md)
 
-The current SAM application uses its Lambda review workers. The AgentCore module is included as a separate implementation; connecting it to that application requires an adapter and AWS configuration.
+The queued review workers support the AgentCore runtime through a native review adapter. Faculty decisions, version history, and administrator approval use the same application workflow. See [AgentCore configuration](docs/AGENTCORE.md).
 
 ## Run locally
 
@@ -86,6 +86,6 @@ The default configuration uses mock data without AWS. See the [application READM
 
 ## Project status
 
-Hackathon prototype with faculty and administrator workflows, background reviews, and version history. Tests passed: **87 backend tests and 30 RAG module tests**, using mocked AWS services and scripted agent responses. Live model quality and processing time require separate evaluation.
+Working application built for AWS Breaking Barriers 2026, with faculty and administrator workflows, background reviews, and version history. Automated checks cover **95 backend tests and 34 RAG tests**, using mocked AWS services and scripted agent responses.
 
 See [implementation status](docs/IMPLEMENTATION_STATUS.md) for current features and planned work.

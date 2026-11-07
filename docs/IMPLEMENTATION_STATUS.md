@@ -2,7 +2,7 @@
 
 Application baseline: `master`, commit `834cbb7b8f01140e9aabbab8343c3dcd35d7a5c8`. Additional branch code is listed in [branch integration](BRANCHES.md).
 
-“Code present” means the implementation exists in this snapshot; it does not establish a healthy live AWS deployment. The backend suite passed 87 tests with mocked AWS services.
+“Code present” means the implementation exists in this snapshot; it does not establish a healthy live AWS deployment. The backend suite passed 95 tests and the RAG suite passed 34 tests with mocked services.
 
 | Capability | Evidence under ASPPH/PHACT | Assessment |
 | --- | --- | --- |
@@ -20,7 +20,7 @@ Application baseline: `master`, commit `834cbb7b8f01140e9aabbab8343c3dcd35d7a5c8
 | DOCX/PDF export | frontend/src/lib/docx.ts, pdf.ts; pages/ExportShare.tsx | Browser export code present; no universal admin-before-export guarantee established |
 | Decision email pipeline | backend/functions/decision_notifier | Code present; actual sending depends on SES configuration |
 | Source inspection of original authoritative documents | slide 10 proposal | Proposed; citations alone do not establish full source inspection |
-| AgentCore / Strands RAG | agents/ and contracts/ | Code imported from feat/phact-agents-rag; separate from the SAM review workers |
+| AgentCore / Strands RAG | agents/ and contracts/ | SAM workers invoke the runtime when AgentCoreRuntimeArn is configured; native review output preserves the current UI contract |
 | Corpus preparation CLI | agents/phact_rag/ | Source imported from feat/phact-agents-rag; differs from the earlier pasted pipeline notes |
 | Under-60-second analysis | presentation pilot target | Not measured; application README says live reviews may take 1–3 minutes |
 | Faculty adoption/impact findings | research guide and presentation | Leadership observations; direct faculty validation pending |

@@ -76,7 +76,11 @@ async def handle(payload: dict, settings: Settings, deps_factory: Callable[[Sett
         result = await analyze(
             AnalysisRequest(job_id=job_id, syllabus_id=syllabus_id, syllabus_text=text,
                             course_name=payload.get("course_name"),
-                            confirm_relevance=bool(payload.get("confirm_relevance"))),
+                            confirm_relevance=bool(payload.get("confirm_relevance")),
+                            review_type=payload.get("review_type"),
+                            guidance=str(payload.get("guidance") or "")[:1000],
+                            declined=tuple(str(v)[:500] for v in (payload.get("declined") or [])[:12]),
+                            competency_reference=tuple(payload.get("competency_reference") or [])),
             deps_factory(settings),
         )
     except (PayloadError, InputTooLargeError, ValueError) as error:
@@ -85,7 +89,8 @@ async def handle(payload: dict, settings: Settings, deps_factory: Callable[[Sett
         log.exception("Analysis failed for job %s", job_id)
         result = _failed(job_id, syllabus_id, settings, "The analysis could not be completed. Please retry.")
 
-    key = save_result(result, owner_sub, settings, s3)
+    # SAM workers own result persistence and the faculty decision/version lifecycle.
+    key = None if payload.get("review_type") else save_result(result, owner_sub, settings, s3)
     triggered = bool(key) and result.status == "SUCCEEDED" and trigger_postprocess(
         job_id, owner_sub, syllabus_id, key, settings, lam)
     return {

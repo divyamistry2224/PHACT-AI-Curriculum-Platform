@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 
 from botocore.exceptions import ClientError
 
-from . import auth, aws, db, guardrails, pii, proposals, storage, style
+from . import agentcore, auth, aws, db, guardrails, pii, proposals, storage, style
 from .diff import line_diff, stats
 from .errors import ContentBlocked, ReviewFailed
 from .http import BadRequest, Conflict, Gone, NotFound, optional_str, parse_json_body, path_param, respond
@@ -220,14 +220,17 @@ def process(review_id: str, spec) -> None:
         if text is None:
             raise ReviewFailed("The version this review was based on is no longer available.")
 
-        sources = spec.retrieve(syllabus, text)
+        sources = [] if agentcore.configured() and review["reviewType"] == "MODERNIZATION" else spec.retrieve(syllabus, text)
 
         _set_stage(review_id, STAGE_ANALYZING)
         if guardrails.input_blocked(text):
             raise ContentBlocked("This syllabus contains content our safety filters block, so it can't be reviewed.")
         # The text was purged of personal details at upload, so the model only ever sees purged text.
         context = {"guidance": review.get("guidance") or "", "declined": review.get("declinedContext") or []}
-        model_output = spec.analyze(text, sources, syllabus, context)
+        if agentcore.configured():
+            model_output, sources = agentcore.analyze(review, syllabus, text, sources, context)
+        else:
+            model_output = spec.analyze(text, sources, syllabus, context)
 
         _set_stage(review_id, STAGE_REWRITING)
         model_output = _mask_output(model_output)

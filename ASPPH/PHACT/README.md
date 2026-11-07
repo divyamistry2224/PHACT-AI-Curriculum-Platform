@@ -11,6 +11,12 @@ Everything deploys from one AWS SAM template (`template.yaml`, which is CloudFor
 - Python 3.12
 - Node 22 and pnpm (`brew install node@22 pnpm`) to build the front end. Without them the backend still deploys and the front end step is skipped with a message
 
+## AgentCore reviews
+
+The review workers support both direct Bedrock calls and the three-agent AgentCore runtime. Set `PHACT_AGENTCORE_RUNTIME_ARN` when deploying to select an existing runtime. That runtime must include the native SAM review contract from `agents/`. With no runtime ARN configured, the current direct-Bedrock workflow remains active.
+
+See [AgentCore setup](../../docs/AGENTCORE.md) for runtime requirements and deployment order.
+
 ## Deploy
 
 ```bash
