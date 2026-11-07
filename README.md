@@ -2,19 +2,19 @@
 
 ![PHACT logo](docs/branding/phact-logo-2.png)
 
-PHACT helps public health educators review syllabi, identify competency gaps, and integrate AI responsibly. Faculty can review suggested changes, save revised versions, and submit a syllabus for administrator approval.
+I worked with my team to build PHACT, an application that helps public health educators review syllabi, identify competency gaps, and integrate AI responsibly. Faculty can review suggested changes, save revised versions, and submit a syllabus for administrator approval.
 
-Built for **AWS Breaking Barriers 2026** by **Team 34 — Health PHACTory**.
+I developed this project with **Team 34 — Health PHACTory** during **AWS Breaking Barriers 2026**.
 
 [Presentation](docs/presentation/PHACT_Presentation_v13.pptx) · [API contract](docs/api/PHACT_API_Contract.xlsx)
 
 ## Demo availability
 
-PHACT was deployed live on AWS during the three-day AWS Breaking Barriers 2026 hackathon. The temporary hackathon AWS session has ended, and the hosted demo is no longer available.
+My team and I deployed PHACT live on AWS during the three-day AWS Breaking Barriers 2026 hackathon. Our temporary AWS session has since ended, so the hosted demo is no longer available.
 
-You can run the application locally at **[http://localhost:8443/](http://localhost:8443/)** using the instructions below. This address works on your own computer after starting the app; it is not a public hosted demo. Local mode uses sample data and simulated AI responses without the expired AWS environment.
+I now run PHACT locally at **[http://localhost:8443/](http://localhost:8443/)** to demonstrate the interface and workflows. You can run it on your computer using the instructions below. The local demo uses sample data and simulated AI responses; the localhost link works only after you start the app on your own computer.
 
-## Features
+## What we built
 
 - Upload a PDF, DOCX, or pasted syllabus.
 - Review coverage of the 22 CEPH foundational competencies.
@@ -28,7 +28,7 @@ You can run the application locally at **[http://localhost:8443/](http://localho
 
 ![PHACT architecture](docs/architecture/architecture.png)
 
-The React app is hosted on S3 through CloudFront, with Cognito for sign-in. API Gateway and Python Lambda functions handle uploads and reviews. SQS queues background analysis, while Amazon Bedrock retrieves reference material and generates recommendations. DynamoDB stores review state, S3 stores syllabus versions, and Comprehend and Bedrock Guardrails support personal data handling and content checks.
+We hosted the React app on S3 through CloudFront and used Cognito for sign-in. We used API Gateway and Python Lambda functions for uploads and reviews, SQS for background analysis, and Amazon Bedrock for retrieval and recommendations. DynamoDB stores review state, S3 stores syllabus versions, and Comprehend and Bedrock Guardrails support personal data handling and content checks.
 
 [Editable architecture diagram](docs/architecture/architecture.drawio)
 
@@ -95,6 +95,6 @@ The default configuration uses mock data without AWS. See the [application READM
 
 ## Project status
 
-Working application built for AWS Breaking Barriers 2026, with faculty and administrator workflows, background reviews, and version history. Automated checks cover **95 backend tests and 34 RAG tests**, using mocked AWS services and scripted agent responses.
+I built PHACT with my team as a working application for AWS Breaking Barriers 2026, with faculty and administrator workflows, background reviews, and version history. I have included the application code, RAG module, architecture, and presentation in this repository. The current test suites cover **95 backend tests and 34 RAG tests**, using mocked AWS services and scripted agent responses.
 
 See [implementation status](docs/IMPLEMENTATION_STATUS.md) for current features and planned work.
