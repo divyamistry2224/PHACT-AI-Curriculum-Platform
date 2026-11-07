@@ -1,0 +1,7 @@
+# AgentCore runtime (agentcore_app.py). Direct code deploy installs these.
+strands-agents>=1.63
+bedrock-agentcore>=1.25
+boto3>=1.39
+pydantic>=2.11
+pypdf>=6.0
+python-docx>=1.2

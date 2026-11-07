@@ -1,0 +1,174 @@
+{
+ "schemaVersion": "1.0",
+ "jobId": "job_example",
+ "syllabusId": "syllabus_example",
+ "status": "SUCCEEDED",
+ "generatedAt": "2026-11-04T12:00:00+00:00",
+ "modelId": "example-model-id",
+ "corpusVersion": "v1",
+ "recommendations": [
+  {
+   "id": "job_example-rec-1",
+   "jobId": "job_example",
+   "syllabusId": "syllabus_example",
+   "title": "AI-assisted code review with disclosure",
+   "module": "Final analysis report",
+   "activityType": "Assignment redesign",
+   "integrationType": "AI_ASSISTED",
+   "description": "d",
+   "rationale": "r",
+   "implementationSteps": [
+    "s1"
+   ],
+   "learningOutcomes": [
+    "o1"
+   ],
+   "responsibleAI": "Disclose and verify",
+   "citations": [
+    {
+     "id": "C1",
+     "sourceId": "ceph-mph-foundational",
+     "title": "CEPH MPH Foundational Competencies",
+     "publisher": "CEPH",
+     "kind": "Authoritative",
+     "version": "v1",
+     "page": 1,
+     "excerpt": "4. Interpret results of data analysis for public health research, policy or practice.",
+     "illustrative": false
+    },
+    {
+     "id": "S1",
+     "sourceId": "mph-syllabus-02-southeast",
+     "title": "MPH Sample Syllabus 02",
+     "publisher": "Synthetic",
+     "kind": "Faculty Example",
+     "version": "v1",
+     "page": 1,
+     "excerpt": "Students may use generative AI for brainstorming if disclosed in a methods note.",
+     "illustrative": false
+    }
+   ],
+   "grounded": true,
+   "status": "DRAFT"
+  },
+  {
+   "id": "job_example-rec-2",
+   "jobId": "job_example",
+   "syllabusId": "syllabus_example",
+   "title": "Oral defence of appraisal memo",
+   "module": "Week 7",
+   "activityType": "Assessment",
+   "integrationType": "AI_RESISTANT",
+   "description": "d",
+   "rationale": "r",
+   "implementationSteps": [],
+   "learningOutcomes": [],
+   "responsibleAI": "n/a",
+   "citations": [],
+   "grounded": false,
+   "status": "DRAFT"
+  }
+ ],
+ "competencyMappings": [
+  {
+   "id": "job_example-map-1",
+   "objective": "Calculate and interpret incidence, prevalence and risk ratios.",
+   "competency": "CEPH MPH Foundational Competency 4: Interpret results of data analysis",
+   "alignment": "Partial Alignment",
+   "gap": "No policy translation task",
+   "improvement": "Add a policy brief",
+   "source": "CEPH MPH Foundational Competencies (p. 1)",
+   "reasoning": "Synthesis",
+   "citations": [
+    {
+     "id": "C1",
+     "sourceId": "ceph-mph-foundational",
+     "title": "CEPH MPH Foundational Competencies",
+     "publisher": "CEPH",
+     "kind": "Authoritative",
+     "version": "v1",
+     "page": 1,
+     "excerpt": "4. Interpret results of data analysis for public health research, policy or practice.",
+     "illustrative": false
+    }
+   ]
+  }
+ ],
+ "workforceNotes": [],
+ "revisedSyllabus": {
+  "title": "EPID 601 (revised draft)",
+  "changeSummary": [
+   "Week 7: oral defence"
+  ],
+  "markdown": "# EPID 601\n- [PHACT] Oral defence\nContact: [EMAIL]",
+  "status": "DRAFT"
+ },
+ "evidence": [
+  {
+   "id": "C1",
+   "sourceId": "ceph-mph-foundational",
+   "title": "CEPH MPH Foundational Competencies",
+   "publisher": "CEPH",
+   "kind": "Authoritative",
+   "version": "v1",
+   "page": 1,
+   "excerpt": "4. Interpret results of data analysis for public health research, policy or practice.",
+   "illustrative": false
+  },
+  {
+   "id": "S1",
+   "sourceId": "mph-syllabus-02-southeast",
+   "title": "MPH Sample Syllabus 02",
+   "publisher": "Synthetic",
+   "kind": "Faculty Example",
+   "version": "v1",
+   "page": 1,
+   "excerpt": "Students may use generative AI for brainstorming if disclosed in a methods note.",
+   "illustrative": false
+  },
+  {
+   "id": "C2",
+   "sourceId": "ceph-mph-foundational",
+   "title": "CEPH MPH Foundational Competencies",
+   "publisher": "CEPH",
+   "kind": "Authoritative",
+   "version": "v1",
+   "page": 1,
+   "excerpt": "3. Analyze quantitative and qualitative data using biostatistics, informatics ...",
+   "illustrative": false
+  }
+ ],
+ "warnings": [
+  "Mapping 'Calculate and interpret incidence, prevalence and risk ratio': dropped unknown evidence ID 'C99'.",
+  "Recommendation 'Oral defence of appraisal memo': dropped unknown evidence ID 'Z9'.",
+  "Recommendation 'Oral defence of appraisal memo' has no supporting evidence and is marked ungrounded.",
+  "Removed 1 email/phone pattern(s) from the revised syllabus."
+ ],
+ "message": null,
+ "documentCheck": {
+  "verdict": "OK",
+  "message": null,
+  "documentType": "course syllabus",
+  "confidence": 0.95,
+  "syllabusSignals": [
+   "learning outcomes or objectives",
+   "schedule",
+   "assessment and grading",
+   "assignments",
+   "instructor and office hours",
+   "course identity"
+  ],
+  "missingSections": [
+   "course policies"
+  ],
+  "method": "classifier"
+ },
+ "piiRedactions": 2,
+ "timingsMs": {
+  "safety": 5,
+  "agent1_competency": 21000,
+  "agent2_syllabus": 18000,
+  "agent3_synthesis": 30000,
+  "total": 51005
+ }
+}

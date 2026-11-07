@@ -1,3 +1,5 @@
+> Earlier design notes. Current branch code is in `ASPPH/PHACT/agents/`; its implementation differs from these notes.
+
 # PHACT RAG pipeline
 
 

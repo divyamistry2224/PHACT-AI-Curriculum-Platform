@@ -1,0 +1,480 @@
+{
+ "$defs": {
+  "Citation": {
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "sourceId": {
+     "title": "Sourceid",
+     "type": "string"
+    },
+    "title": {
+     "title": "Title",
+     "type": "string"
+    },
+    "publisher": {
+     "title": "Publisher",
+     "type": "string"
+    },
+    "kind": {
+     "enum": [
+      "Authoritative",
+      "Faculty Example"
+     ],
+     "title": "Kind",
+     "type": "string"
+    },
+    "version": {
+     "title": "Version",
+     "type": "string"
+    },
+    "page": {
+     "anyOf": [
+      {
+       "type": "integer"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Page"
+    },
+    "excerpt": {
+     "title": "Excerpt",
+     "type": "string"
+    },
+    "illustrative": {
+     "default": false,
+     "title": "Illustrative",
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "id",
+    "sourceId",
+    "title",
+    "publisher",
+    "kind",
+    "version",
+    "excerpt"
+   ],
+   "title": "Citation",
+   "type": "object"
+  },
+  "CompetencyMapping": {
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "objective": {
+     "title": "Objective",
+     "type": "string"
+    },
+    "competency": {
+     "title": "Competency",
+     "type": "string"
+    },
+    "alignment": {
+     "enum": [
+      "Strong Alignment",
+      "Partial Alignment",
+      "Gap Identified"
+     ],
+     "title": "Alignment",
+     "type": "string"
+    },
+    "gap": {
+     "title": "Gap",
+     "type": "string"
+    },
+    "improvement": {
+     "title": "Improvement",
+     "type": "string"
+    },
+    "source": {
+     "title": "Source",
+     "type": "string"
+    },
+    "reasoning": {
+     "title": "Reasoning",
+     "type": "string"
+    },
+    "citations": {
+     "items": {
+      "$ref": "#/$defs/Citation"
+     },
+     "title": "Citations",
+     "type": "array"
+    }
+   },
+   "required": [
+    "id",
+    "objective",
+    "competency",
+    "alignment",
+    "gap",
+    "improvement",
+    "source",
+    "reasoning",
+    "citations"
+   ],
+   "title": "CompetencyMapping",
+   "type": "object"
+  },
+  "DocCheckResult": {
+   "properties": {
+    "verdict": {
+     "enum": [
+      "OK",
+      "NOT_A_SYLLABUS",
+      "NOT_PUBLIC_HEALTH",
+      "UNCERTAIN"
+     ],
+     "title": "Verdict",
+     "type": "string"
+    },
+    "message": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "description": "User-facing explanation when verdict is not OK",
+     "title": "Message"
+    },
+    "documentType": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Documenttype"
+    },
+    "confidence": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Confidence"
+    },
+    "syllabusSignals": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Syllabussignals",
+     "type": "array"
+    },
+    "missingSections": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Missingsections",
+     "type": "array"
+    },
+    "method": {
+     "enum": [
+      "heuristic",
+      "classifier",
+      "heuristic_fallback"
+     ],
+     "title": "Method",
+     "type": "string"
+    }
+   },
+   "required": [
+    "verdict",
+    "method"
+   ],
+   "title": "DocCheckResult",
+   "type": "object"
+  },
+  "Recommendation": {
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "jobId": {
+     "title": "Jobid",
+     "type": "string"
+    },
+    "syllabusId": {
+     "title": "Syllabusid",
+     "type": "string"
+    },
+    "title": {
+     "title": "Title",
+     "type": "string"
+    },
+    "module": {
+     "title": "Module",
+     "type": "string"
+    },
+    "activityType": {
+     "title": "Activitytype",
+     "type": "string"
+    },
+    "integrationType": {
+     "enum": [
+      "AI_ASSISTED",
+      "AI_RESISTANT",
+      "AI_LITERACY",
+      "NO_CHANGE"
+     ],
+     "title": "Integrationtype",
+     "type": "string"
+    },
+    "description": {
+     "title": "Description",
+     "type": "string"
+    },
+    "rationale": {
+     "title": "Rationale",
+     "type": "string"
+    },
+    "implementationSteps": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Implementationsteps",
+     "type": "array"
+    },
+    "learningOutcomes": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Learningoutcomes",
+     "type": "array"
+    },
+    "responsibleAI": {
+     "title": "Responsibleai",
+     "type": "string"
+    },
+    "citations": {
+     "items": {
+      "$ref": "#/$defs/Citation"
+     },
+     "title": "Citations",
+     "type": "array"
+    },
+    "grounded": {
+     "description": "False when no valid citation survived validation",
+     "title": "Grounded",
+     "type": "boolean"
+    },
+    "status": {
+     "const": "DRAFT",
+     "default": "DRAFT",
+     "title": "Status",
+     "type": "string"
+    }
+   },
+   "required": [
+    "id",
+    "jobId",
+    "syllabusId",
+    "title",
+    "module",
+    "activityType",
+    "integrationType",
+    "description",
+    "rationale",
+    "implementationSteps",
+    "learningOutcomes",
+    "responsibleAI",
+    "citations",
+    "grounded"
+   ],
+   "title": "Recommendation",
+   "type": "object"
+  },
+  "RevisedSyllabus": {
+   "properties": {
+    "title": {
+     "title": "Title",
+     "type": "string"
+    },
+    "changeSummary": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Changesummary",
+     "type": "array"
+    },
+    "markdown": {
+     "title": "Markdown",
+     "type": "string"
+    },
+    "status": {
+     "const": "DRAFT",
+     "default": "DRAFT",
+     "title": "Status",
+     "type": "string"
+    }
+   },
+   "required": [
+    "title",
+    "changeSummary",
+    "markdown"
+   ],
+   "title": "RevisedSyllabus",
+   "type": "object"
+  }
+ },
+ "properties": {
+  "schemaVersion": {
+   "title": "Schemaversion",
+   "type": "string"
+  },
+  "jobId": {
+   "title": "Jobid",
+   "type": "string"
+  },
+  "syllabusId": {
+   "title": "Syllabusid",
+   "type": "string"
+  },
+  "status": {
+   "description": "BLOCKED = guardrail; REJECTED = wrong document (see documentCheck); nothing reaches the agents in either case",
+   "enum": [
+    "SUCCEEDED",
+    "BLOCKED",
+    "REJECTED",
+    "FAILED"
+   ],
+   "title": "Status",
+   "type": "string"
+  },
+  "generatedAt": {
+   "title": "Generatedat",
+   "type": "string"
+  },
+  "modelId": {
+   "title": "Modelid",
+   "type": "string"
+  },
+  "corpusVersion": {
+   "anyOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "null"
+    }
+   ],
+   "title": "Corpusversion"
+  },
+  "recommendations": {
+   "items": {
+    "$ref": "#/$defs/Recommendation"
+   },
+   "title": "Recommendations",
+   "type": "array"
+  },
+  "competencyMappings": {
+   "items": {
+    "$ref": "#/$defs/CompetencyMapping"
+   },
+   "title": "Competencymappings",
+   "type": "array"
+  },
+  "workforceNotes": {
+   "items": {
+    "type": "string"
+   },
+   "title": "Workforcenotes",
+   "type": "array"
+  },
+  "revisedSyllabus": {
+   "anyOf": [
+    {
+     "$ref": "#/$defs/RevisedSyllabus"
+    },
+    {
+     "type": "null"
+    }
+   ],
+   "default": null
+  },
+  "evidence": {
+   "items": {
+    "$ref": "#/$defs/Citation"
+   },
+   "title": "Evidence",
+   "type": "array"
+  },
+  "warnings": {
+   "items": {
+    "type": "string"
+   },
+   "title": "Warnings",
+   "type": "array"
+  },
+  "message": {
+   "anyOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "null"
+    }
+   ],
+   "default": null,
+   "description": "User-facing message when status is BLOCKED, REJECTED or FAILED",
+   "title": "Message"
+  },
+  "documentCheck": {
+   "anyOf": [
+    {
+     "$ref": "#/$defs/DocCheckResult"
+    },
+    {
+     "type": "null"
+    }
+   ],
+   "default": null
+  },
+  "piiRedactions": {
+   "default": 0,
+   "title": "Piiredactions",
+   "type": "integer"
+  },
+  "timingsMs": {
+   "additionalProperties": {
+    "type": "integer"
+   },
+   "title": "Timingsms",
+   "type": "object"
+  }
+ },
+ "required": [
+  "schemaVersion",
+  "jobId",
+  "syllabusId",
+  "status",
+  "generatedAt",
+  "modelId",
+  "corpusVersion"
+ ],
+ "title": "AnalysisResult",
+ "type": "object",
+ "$id": "phact/analysis.schema.json",
+ "description": "PHACT analysis result returned by the AgentCore runtime (generated from phact_agents/schemas.py)."
+}

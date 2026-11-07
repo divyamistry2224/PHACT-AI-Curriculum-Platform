@@ -1,6 +1,6 @@
 # Implementation evidence
 
-Inspected branch: `master`, commit `834cbb7b8f01140e9aabbab8343c3dcd35d7a5c8`, November 7, 2026.
+Application baseline: `master`, commit `834cbb7b8f01140e9aabbab8343c3dcd35d7a5c8`. Additional branch code is listed in [branch integration](BRANCHES.md).
 
 “Code present” means the implementation exists in this snapshot; it does not establish a healthy live AWS deployment. The backend suite passed 87 tests with mocked AWS services.
 
@@ -20,8 +20,8 @@ Inspected branch: `master`, commit `834cbb7b8f01140e9aabbab8343c3dcd35d7a5c8`, N
 | DOCX/PDF export | frontend/src/lib/docx.ts, pdf.ts; pages/ExportShare.tsx | Browser export code present; no universal admin-before-export guarantee established |
 | Decision email pipeline | backend/functions/decision_notifier | Code present; actual sending depends on SES configuration |
 | Source inspection of original authoritative documents | slide 10 proposal | Proposed; citations alone do not establish full source inspection |
-| CDK / FastAPI / AgentCore / Strands scaffold | user-supplied plan | Historical alternative, not this branch's implementation |
-| Separate phact_rag package | attached text descriptions only | Source absent from inspected repository and uploads |
+| AgentCore / Strands RAG | agents/ and contracts/ | Code imported from feat/phact-agents-rag; separate from the SAM review workers |
+| Corpus preparation CLI | agents/phact_rag/ | Source imported from feat/phact-agents-rag; differs from the earlier pasted pipeline notes |
 | Under-60-second analysis | presentation pilot target | Not measured; application README says live reviews may take 1–3 minutes |
 | Faculty adoption/impact findings | research guide and presentation | Leadership observations; direct faculty validation pending |
 

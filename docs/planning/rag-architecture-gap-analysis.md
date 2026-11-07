@@ -1,3 +1,5 @@
+> Earlier design notes. Current branch code is in `ASPPH/PHACT/agents/`; its implementation differs from these notes.
+
 PHACT RAG Pipeline — Architecture Review and Gap Analysis
 There are some gaps, but the current design already covers most of the core RAG functionality. The main gaps involve integration with the team's architecture, source version consistency, and failure recovery. Some of these gaps are already explicitly documented, which means they are known incomplete items rather than necessarily design flaws.
 The following review is based on the documentation you provided. I have not reviewed the actual source code, so I cannot verify whether the tests, access controls, or citation validation mechanisms work as described.

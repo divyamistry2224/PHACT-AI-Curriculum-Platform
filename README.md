@@ -41,11 +41,14 @@ The React app is hosted on S3 through CloudFront, with Cognito for sign-in. API 
 ASPPH/PHACT/
   frontend/             React application
   backend/              Lambda functions and shared services
+  agents/               Three-agent RAG runtime and corpus preparation
+  contracts/            Analysis JSON schema and example
   template.yaml         AWS infrastructure
   scripts/              Deployment and integration checks
   tests/                Backend tests and local browser harness
   data/                 Competency references and synthetic syllabi
 ASPPH/Data/             Reference documents
+prototypes/frontend/   Earlier frontend implementation
 ASPPH/PHACT UX-UI Design/
 docs/
   architecture/         Architecture diagram and editable source
@@ -55,6 +58,18 @@ docs/
   research/             Faculty discovery interview guide
   planning/             Requirements and proposed improvements
 ```
+
+## RAG pipeline
+
+The [agents module](ASPPH/PHACT/agents/) contains the three-agent Strands workflow, AgentCore entrypoint, reference corpus preparation, citation validation, and DOCX/PDF post-processing.
+
+- [Pipeline](ASPPH/PHACT/agents/phact_agents/pipeline.py)
+- [Retrieval and evidence](ASPPH/PHACT/agents/phact_agents/evidence.py)
+- [Corpus preparation CLI](ASPPH/PHACT/agents/phact_rag/__main__.py)
+- [Analysis contract](ASPPH/PHACT/contracts/analysis.schema.json)
+- [Setup and tests](ASPPH/PHACT/agents/README.md)
+
+The current SAM application uses its Lambda review workers. The AgentCore module is included as a separate implementation; connecting it to that application requires an adapter and AWS configuration.
 
 ## Run locally
 
@@ -71,6 +86,6 @@ The default configuration uses mock data without AWS. See the [application READM
 
 ## Project status
 
-Hackathon prototype with faculty and administrator workflows, background reviews, and version history. The backend test suite passed **87 tests using mocked AWS services**. Live model quality and processing time require separate evaluation.
+Hackathon prototype with faculty and administrator workflows, background reviews, and version history. Tests passed: **87 backend tests and 30 RAG module tests**, using mocked AWS services and scripted agent responses. Live model quality and processing time require separate evaluation.
 
 See [implementation status](docs/IMPLEMENTATION_STATUS.md) for current features and planned work.

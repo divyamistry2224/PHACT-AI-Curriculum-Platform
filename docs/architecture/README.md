@@ -33,7 +33,7 @@ Authority: `ASPPH/PHACT/template.yaml`, `backend/functions/`, and `backend/share
 
 The user supplied a CDK/FastAPI/Strands/AgentCore scaffold and OIDC Hosted UI snippets. Those differ from the inspected implementation: SAM infrastructure, individual Lambda handlers, direct Bedrock calls, and Cognito `USER_PASSWORD_AUTH` with token refresh. They are retained as requirements context, not inserted into the application.
 
-The separate RAG notes describe a reusable Retrieve + Converse module and async adapter. That module's source was not supplied, so it is not represented as integrated or deployed.
+The separate RAG notes describe a reusable Retrieve + Converse module and async adapter. The `feat/phact-agents-rag` branch supplies a separate three-agent runtime and corpus CLI, now included under `ASPPH/PHACT/agents/`. It is not wired into the SAM workers or verified as deployed.
 
 ## Review lifecycle
 
