@@ -1,0 +1,12 @@
+.aws-sam/
+.phact/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+.kiro/
+.DS_Store

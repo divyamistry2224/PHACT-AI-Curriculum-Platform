@@ -1,0 +1,136 @@
+Screen,Status,Endpoint,Direction,Object,Name,Type / allowed values,Required,Purpose
+All screens,Built,,Config,frontend/.env.local,VITE_DATA_MODE,live,Yes,Switches src/api from mock.ts to http.ts
+All screens,Built,,Config,frontend/.env.local,VITE_API_BASE_URL,Stack output ApiUrl,Yes,Base URL for every request (already ends in /v1)
+All screens,Built,,Config,frontend/.env.local,VITE_AWS_REGION,Stack output Region,Yes,Amplify Auth config
+All screens,Built,,Config,frontend/.env.local,VITE_USER_POOL_ID,Stack output UserPoolId,Yes,Amplify Auth config
+All screens,Built,,Config,frontend/.env.local,VITE_USER_POOL_CLIENT_ID,Stack output UserPoolClientId,Yes,Amplify Auth config
+All screens,Built,Every request,Send,Request header,Authorization,"Raw Cognito ID token, no ""Bearer "" prefix",Yes,API Gateway's Cognito authorizer reads the ID token
+All screens,Built,,Read,ID token claim,cognito:groups,faculty | admin,,Show or hide admin navigation
+All screens,Built,Every response,Receive,Any object,(missing field),Treat as null,,The API omits fields that have no value
+All screens,Built,Any error,Receive,Error body,code,string,,Machine-readable error code (see the error-code rows)
+All screens,Built,Any error,Receive,Error body,message,string,,Show to the user exactly as written
+All screens,Built,Any error,Receive,Error body,requestId,string,,Include when reporting a bug
+Upload,Built,POST /uploads,Send,Request body,fileName,string,Yes,Original file name; must end in .pdf or .docx
+Upload,Built,POST /uploads,Send,Request body,fileSize,number (bytes),No,Lets the API reject files over 10 MB before upload
+Upload,Built,POST /uploads,Receive,Response,uploadId,string,,ID for this upload
+Upload,Built,POST /uploads,Receive,Response,uploadKey,string,,Pass to POST /syllabi after the file is uploaded
+Upload,Built,POST /uploads,Receive,Response,uploadUrl,string (URL),,Presigned S3 URL; PUT the file here
+Upload,Built,POST /uploads,Receive,Response,method,"""PUT""",,HTTP method for uploadUrl
+Upload,Built,POST /uploads,Receive,Response,headers,object,,Send exactly these headers with the PUT (Content-Type)
+Upload,Built,POST /uploads,Receive,Response,maxBytes,number (10485760),,Largest allowed file (10 MB)
+Upload,Built,POST /uploads,Receive,Response,expiresInSeconds,number (900),,uploadUrl stops working after 15 minutes
+Upload,Built,PUT {uploadUrl},Send,Request,(file body),binary + headers from POST /uploads,Yes,Upload straight to S3; use XHR progress events for the progress bar
+Upload,Built,PUT {uploadUrl},Receive,Response,(status 200),HTTP 200,,Upload finished; now call POST /syllabi
+Upload,Built,POST /syllabi,Send,Request body,title,"string, max 200",Yes,Course name
+Upload,Built,POST /syllabi,Send,Request body,subject,"string, max 100",No,Subject area; used to find peer examples
+Upload,Built,POST /syllabi,Send,Request body,description,"string, max 2000",No,Short course summary
+Upload,Built,POST /syllabi,Send,Request body,uploadKey,string,Either this or text,From POST /uploads
+Upload,Built,POST /syllabi,Send,Request body,text,string,Either this or uploadKey,Pasted syllabus text
+Upload,Built,POST /syllabi,Receive,Response,syllabus,Syllabus detail object,,The new syllabus (version 1)
+Upload,Built,POST /syllabi,Receive,Response,extractedText,string (Markdown),,Show so faculty can confirm it was read correctly
+Upload,Built,"POST /uploads, POST /syllabi",Receive,Error code,UNSUPPORTED_TYPE,HTTP 400,,Not a PDF or DOCX
+Upload,Built,"POST /uploads, POST /syllabi",Receive,Error code,TOO_LARGE,HTTP 400,,File over 10 MB
+Upload,Built,"POST /uploads, POST /syllabi",Receive,Error code,EXTRACTION_FAILED,HTTP 400,,File couldn't be read
+Upload,Built,"POST /uploads, POST /syllabi",Receive,Error code,TOO_SHORT,HTTP 400,,"Almost no text found; likely a scanned PDF, suggest pasting"
+Upload,Built,"POST /uploads, POST /syllabi",Receive,Error code,TOO_LONG,HTTP 400,,"Over 200,000 characters"
+Upload,Built,"POST /uploads, POST /syllabi",Receive,Error code,UPLOAD_MISSING,HTTP 400,,Uploaded file not found; upload again
+Dashboard,Built,GET /syllabi,Receive,Response,syllabi,array of Syllabus summary,,"The caller's syllabi, newest first"
+Dashboard,Built,GET /syllabi,Receive,Syllabus summary,syllabusId,string,,Route key
+Dashboard,Built,GET /syllabi,Receive,Syllabus summary,title,string,,Display
+Dashboard,Built,GET /syllabi,Receive,Syllabus summary,subject,string,,Display
+Dashboard,Built,GET /syllabi,Receive,Syllabus summary,description,string,,Display
+Dashboard,Built,GET /syllabi,Receive,Syllabus summary,sourceType,PDF | DOCX | PASTE,,Badge
+Dashboard,Built,GET /syllabi,Receive,Syllabus summary,currentVersion,number,,"""Working copy: v3"""
+Dashboard,Built,GET /syllabi,Receive,Syllabus summary,currentVersionSource,UPLOAD | COMPETENCY | MODERNIZATION,,"""v3 · AI modernized"""
+Dashboard,Built,GET /syllabi,Receive,Syllabus summary,versionCount,number,,Number of versions
+Dashboard,Built,GET /syllabi,Receive,Syllabus summary,reviewRunning,boolean,,Disable both Run review buttons while true
+Dashboard,Built,GET /syllabi,Receive,Syllabus summary,activeReviewId,string,,Resume polling with this review ID
+Dashboard,Built,GET /syllabi,Receive,Syllabus summary,approvalStatus,NONE | PENDING | APPROVED | DENIED,,Status chip
+Dashboard,Built,GET /syllabi,Receive,Syllabus summary,submittedVersion,number,,Version sent for approval
+Dashboard,Built,GET /syllabi,Receive,Syllabus summary,submittedAt,ISO 8601 date,,Approval details
+Dashboard,Built,GET /syllabi,Receive,Syllabus summary,decidedAt,ISO 8601 date,,Approval details
+Dashboard,Built,GET /syllabi,Receive,Syllabus summary,denyReason,string,,Show when approvalStatus is DENIED
+Dashboard,Built,GET /syllabi,Receive,Syllabus summary,createdAt,ISO 8601 date,,Uploaded on
+Dashboard,Built,GET /syllabi,Receive,Syllabus summary,updatedAt,ISO 8601 date,,Last change
+Dashboard,Built,GET /syllabi,Receive,Syllabus summary,expiresAt,ISO 8601 date,,"""Available until …"" (180 days after upload)"
+Syllabus workspace,Built,GET /syllabi/{id},Receive,Response,syllabus,Syllabus detail (summary fields + versions),,Banner and history
+Syllabus workspace,Built,GET /syllabi/{id},Receive,Response,reviews,array of Review,,Reviews run on this syllabus
+Syllabus workspace,Built,GET /syllabi/{id},Receive,Syllabus detail: versions[],n,number,,Version number
+Syllabus workspace,Built,GET /syllabi/{id},Receive,Syllabus detail: versions[],source,UPLOAD | COMPETENCY | MODERNIZATION,,What created this version
+Syllabus workspace,Built,GET /syllabi/{id},Receive,Syllabus detail: versions[],reviewId,string,,The review that created it (absent for v1)
+Syllabus workspace,Built,GET /syllabi/{id},Receive,Syllabus detail: versions[],createdAt,ISO 8601 date,,When it was created
+Syllabus workspace,Built,GET /syllabi/{id}/versions/{n},Receive,Response,syllabusId,string,,
+Syllabus workspace,Built,GET /syllabi/{id}/versions/{n},Receive,Response,version,number,,Version number
+Syllabus workspace,Built,GET /syllabi/{id}/versions/{n},Receive,Response,source,UPLOAD | COMPETENCY | MODERNIZATION,,What created this version
+Syllabus workspace,Built,GET /syllabi/{id}/versions/{n},Receive,Response,reviewId,string,,Review that created it
+Syllabus workspace,Built,GET /syllabi/{id}/versions/{n},Receive,Response,createdAt,ISO 8601 date,,
+Syllabus workspace,Built,GET /syllabi/{id}/versions/{n},Receive,Response,isCurrent,boolean,,True for the working copy
+Syllabus workspace,Built,GET /syllabi/{id}/versions/{n},Receive,Response,text,string (Markdown),,"Display, and DOCX download via src/lib/docx.ts"
+Syllabus workspace,Built,"GET /syllabi/{id}, GET /syllabi/{id}/versions/{n}",Receive,Error code,EXPIRED,HTTP 410,,Syllabus passed its 180 days; show the message
+Competency & AI review,Planned,POST /syllabi/{id}/competency-reviews,Receive,Response,reviewId,string,,Start a competency review; poll with this ID
+Competency & AI review,Planned,POST /syllabi/{id}/modernization-reviews,Receive,Response,reviewId,string,,Start an AI review; poll with this ID
+Competency & AI review,Planned,"POST /syllabi/{id}/competency-reviews, POST /syllabi/{id}/modernization-reviews",Receive,Error code,REVIEW_RUNNING,HTTP 409,,A review is already running on this syllabus
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Polling rule,(poll),Every 3 seconds,,"Stop on COMPLETED or FAILED; after 5 minutes show ""taking longer than expected"""
+Competency & AI review,Planned,POST /reviews/{reviewId}/undo,Receive,Response,(updated syllabus),Syllabus summary,,Working copy returns to the review's input version
+Competency & AI review,Planned,POST /reviews/{reviewId}/undo,Receive,Error code,NOT_LATEST,HTTP 409,,A newer version exists; only the latest review can be undone
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Review,reviewId,string,,
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Review,syllabusId,string,,
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Review,reviewType,COMPETENCY | MODERNIZATION,,Which review ran
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Review,jobStatus,QUEUED | RUNNING | COMPLETED | FAILED,,Drives the polling loop
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Review,stage,RETRIEVING_SOURCES | ANALYZING | REWRITING | SAVING,,Progress screen step
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Review,inputVersion,number,,Version the review read
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Review,outputVersion,number,,Version it created
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Review,summary,object,,Small totals for list views
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Review,errorMessage,string,,Show when FAILED
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Review,createdAt,ISO 8601 date,,
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Review,startedAt,ISO 8601 date,,
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Review,completedAt,ISO 8601 date,,
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Review,undoneAt,ISO 8601 date,,Set if the review was undone
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Review,results,object,,Present only when COMPLETED; see results rows
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: competency,coverage,"{addressed, partial, notAddressed, total}",,"""Addresses 6 of 22"" summary"
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: competency,competencies,array,,One row per CEPH competency (22)
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: competency,changes,array,,What the rewrite changed and why
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: competency,diff,array of diff segments,,Changes between input and output versions
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: competencies[],code,D2-1 … D2-22,,CEPH competency code
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: competencies[],number,1 … 22,,
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: competencies[],domain,string,,CEPH domain heading
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: competencies[],statement,string,,Competency text
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: competencies[],status,ADDRESSED | PARTIAL | NOT_ADDRESSED,,Status chip
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: competencies[],evidence,string,,Where the syllabus addresses it
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: competencies[],rationale,string,,Why this status (AI synthesis)
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: competencies[],cephInterpretation,string,,"CEPH's own interpretation text, quoted from KB1"
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: changes[],section,string,,Syllabus section changed
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: changes[],change,string,,What changed
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: changes[],reason,string,,Why
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: changes[],competencyCodes,array of D2-n codes,,Competencies the change addresses
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: AI modernization,recommendations,array,,AI and modern-technology recommendations
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: AI modernization,diff,array of diff segments,,Changes between input and output versions
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: recommendations[],title,string,,Card title
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: recommendations[],category,TEACHING_METHODS | ASSESSMENT_TOOLS | CONTENT_ENHANCEMENT,,Filter tab
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: recommendations[],approach,INTEGRATE_AI | AI_RESISTANT,,Badge
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: recommendations[],target,string,,"Week, module, or assignment it applies to"
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: recommendations[],recommendation,string,,What to change (AI synthesis)
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: recommendations[],rationale,string,,Why
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Results: recommendations[],peerExamples,"array of {title, institution, snippet}",,Citations from approved syllabi in KB2
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Diff segment,op,equal | insert | delete,,"Render inserts green, deletes struck through"
+Competency & AI review,Planned,GET /reviews/{reviewId},Receive,Diff segment,text,string,,The line(s) for this segment
+Submit,Planned,POST /syllabi/{id}/submit,Receive,Response,(updated syllabus),Syllabus summary (approvalStatus PENDING),,Submits the current version for admin approval
+Admin (admin group only),Planned,Any /admin endpoint,Receive,Error code,FORBIDDEN,HTTP 403,,Caller isn't in the admin group
+Admin (admin group only),Planned,GET /admin/queue,Receive,Response,items,array,,Pending submissions
+Admin (admin group only),Planned,GET /admin/queue,Receive,Queue item,syllabusId,string,,Open the submission
+Admin (admin group only),Planned,GET /admin/queue,Receive,Queue item,title,string,,
+Admin (admin group only),Planned,GET /admin/queue,Receive,Queue item,subject,string,,
+Admin (admin group only),Planned,GET /admin/queue,Receive,Queue item,ownerEmail,string,,Who submitted it
+Admin (admin group only),Planned,GET /admin/queue,Receive,Queue item,submittedVersion,number,,
+Admin (admin group only),Planned,GET /admin/queue,Receive,Queue item,submittedAt,ISO 8601 date,,Queue order
+Admin (admin group only),Planned,GET /admin/syllabi/{id},Receive,Response,syllabus,Syllabus summary,,
+Admin (admin group only),Planned,GET /admin/syllabi/{id},Receive,Response,text,string (Markdown),,The submitted version
+Admin (admin group only),Planned,GET /admin/syllabi/{id},Receive,Response,diff,array of diff segments,,Changes against version 1
+Admin (admin group only),Planned,POST /admin/syllabi/{id}/approve,Receive,Response,(updated syllabus),Syllabus summary (APPROVED),,Copies the submitted version into KB2
+Admin (admin group only),Planned,POST /admin/syllabi/{id}/reject,Send,Request body,reason,string,Yes,Shown to the faculty member as denyReason
+Admin (admin group only),Planned,POST /admin/syllabi/{id}/reject,Receive,Response,(updated syllabus),"Syllabus summary (DENIED, denyReason)",,
+Admin (admin group only),Planned,GET /admin/kb,Receive,Response,knowledgeBases,array,,One entry per knowledge base
+Admin (admin group only),Planned,GET /admin/kb,Receive,Knowledge base,name,string,,KB name
+Admin (admin group only),Planned,GET /admin/kb,Receive,Knowledge base,fileCount,number,,Files in its S3 folder
+Admin (admin group only),Planned,GET /admin/kb,Receive,Knowledge base,lastSync,"{status, startedAt, documentsIndexed, documentsFailed}",,Latest ingestion job
+Admin (admin group only),Planned,POST /admin/kb/sync,Send,Request body,kb,CEPH | APPROVED_SYLLABI,Yes,Start a sync now

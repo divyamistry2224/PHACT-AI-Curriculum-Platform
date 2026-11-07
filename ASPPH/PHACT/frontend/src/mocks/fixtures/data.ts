@@ -1,0 +1,143 @@
+/** Mock-mode fixtures. All people and institutions are fictional; CEPH text is the public 2024 criteria. */
+import type { CompetencyStatus } from "../../types"
+
+export const CEPH_COMPETENCIES: { number: number; domain: string; statement: string; interpretation: string }[] = [
+  {
+    "number": 1,
+    "domain": "Evidence-based Approaches to Public Health",
+    "statement": "Apply epidemiological methods to settings and situations in public health practice",
+    "interpretation": "Assessment must include the application of various epidemiological study designs (e.g., cohort study) and principles (e.g., sample size, incidence, prevalence, morbidity, etc.). A single setting/situation is insufficient."
+  },
+  {
+    "number": 2,
+    "domain": "Evidence-based Approaches to Public Health",
+    "statement": "Select quantitative and qualitative data collection methods appropriate for a given public health context",
+    "interpretation": "\"Select\" = choose among methods. Students must be exposed to various methods so that they can distinguish between them. Must see that students can select among both quantitative and qualitative (e.g., focus groups, key informant interviews) data collection methods."
+  },
+  {
+    "number": 3,
+    "domain": "Evidence-based Approaches to Public Health",
+    "statement": "Analyze quantitative and qualitative data using biostatistics, informatics, computer-based programming and software, as appropriate",
+    "interpretation": "Assessment must address both parts of the competency statement: 1) qualitative (i.e., non-numerical) and 2) quantitative. Must see that students can analyze both types of data using the appropriate software. Appropriate software may be general (e.g., Excel or Word) or specific (e.g., NVivo or SPSS)."
+  },
+  {
+    "number": 4,
+    "domain": "Evidence-based Approaches to Public Health",
+    "statement": "Interpret results of data analysis for public health research, policy or practice",
+    "interpretation": "Students should understand and apply findings from data analysis for public health research, policy or practice. Students should have an understanding of the data findings and be able to draw linkages to how the results may influence decisions."
+  },
+  {
+    "number": 5,
+    "domain": "Public Health & Health Care Systems",
+    "statement": "Compare the organization, structure and function of health care, public health, and regulatory systems across national and international settings",
+    "interpretation": "International health systems must be apparent for comparison to be possible."
+  },
+  {
+    "number": 6,
+    "domain": "Public Health & Health Care Systems",
+    "statement": "Discuss the means by which structural bias, social inequities and racism undermine health and create challenges to achieving health equity at organizational, community, and systemic levels",
+    "interpretation": "Students should be able to discuss factors (including racism, specifically) that impact health equity at multiple levels for a particular health problem. Students should be able to discuss health disparities and differences among groups, as well as the ways in which organizations, systems, and structures operate that may have inequitable influences on certain groups."
+  },
+  {
+    "number": 7,
+    "domain": "Planning & Management to Promote Health",
+    "statement": "Assess population needs, assets and capacities that affect communities’ health",
+    "interpretation": "Very concrete skill. Assess a specific community’s strengths, challenges, and the desired outcomes that are necessary for community well-being."
+  },
+  {
+    "number": 8,
+    "domain": "Planning & Management to Promote Health",
+    "statement": "Apply awareness of cultural values and practices to the design, implementation, or critique of public health policies or programs",
+    "interpretation": "A standard program planning assignment in the traditional social & behavioral class is not sufficient without specific attention to cultural considerations. Must see preparation and assessment of students in connecting concepts of culture to the assignment (e.g., cultural adaptation/tailoring, community involvement in planning, cultural humility)."
+  },
+  {
+    "number": 9,
+    "domain": "Planning & Management to Promote Health",
+    "statement": "Design a population-based policy, program, project or intervention",
+    "interpretation": "Very concrete skill. Product could be a research project, plan for a program, policy statement, etc."
+  },
+  {
+    "number": 10,
+    "domain": "Planning & Management to Promote Health",
+    "statement": "Explain basic principles and tools of budget and resource management",
+    "interpretation": "“Resource management” refers to stewardship (planning, monitoring, etc.) of resources throughout a project, not simply preparing a budget statement that projects what resources will be required. Writing a supplemental description to individual line items in a projected budget is often insufficient unless there are other parameters around the task or assignment related to managing budgets and resources (e.g., staffing, space, multiple programs). The didactic preparation and assessment should address steps involved in managing budgets or other resources AFTER a project begins."
+  },
+  {
+    "number": 11,
+    "domain": "Planning & Management to Promote Health",
+    "statement": "Select methods to evaluate public health programs",
+    "interpretation": "“Select” = choose among methods. Students should be able to consider a public health program and choose the appropriate evaluation method for the program. Types of evaluations may include formative evaluation (feasibility, appropriateness, acceptability), process/implementation evaluation (have activities been implemented as intended), outcome/effectiveness evaluation (effect in the target population), and impact evaluation (success in achieving ultimate program goals). Students do not have to actually evaluate, but must be able to identify the correct approach."
+  },
+  {
+    "number": 12,
+    "domain": "Policy in Public Health",
+    "statement": "Discuss the policy-making process, including the roles of ethics and evidence",
+    "interpretation": "Broader than analyzing a specific policy. Students must be able to explain the technical aspects of how policies (on a local, state, or national level) are created and adopted, including legislative and/or regulatory roles and processes. Didactic preparation and assessment should focus on how the policy may move from one legislative committee to another, the iterations a policy goes through, and incorporating feedback to garner enough legislative support for the final version. Students should also consider how research or evaluation evidence and ethics influence the policy making process."
+  },
+  {
+    "number": 13,
+    "domain": "Policy in Public Health",
+    "statement": "Propose strategies to identify relevant communities and individuals and build coalitions and partnerships for influencing public health outcomes",
+    "interpretation": "Students should recognize the importance of community involvement and buy-in as instrumental to promoting community change and improvement and should think about how to bring relevant communities and individuals together. Preparation and assessment should emphasize elements of engagement with relevant communities and individuals."
+  },
+  {
+    "number": 14,
+    "domain": "Policy in Public Health",
+    "statement": "Advocate for political, social or economic policies and programs that will improve health in diverse populations",
+    "interpretation": "Students must understand how to advocate for a particular issue and have the ability to influence policy and/or decision making, such as through community mobilization, educating policy makers, etc. Students must produce a product that would be part of an advocacy campaign or effort (e.g., legislative briefing paper or fact sheet, advocacy strategy outline, etc.)."
+  },
+  {
+    "number": 15,
+    "domain": "Policy in Public Health",
+    "statement": "Evaluate policies for their impact on public health and health equity",
+    "interpretation": "Assessment should focus on the evaluation of policies rather than the development of policies. Students should consider how groups are affected by policies, including both intended and unintended consequences with a focus on the impacts on equity."
+  },
+  {
+    "number": 16,
+    "domain": "Leadership",
+    "statement": "Apply leadership and/or management principles to address a relevant issue",
+    "interpretation": "Principles of leadership and management may include creating a vision, empowering others, fostering collaboration, and guiding decision making. Students must apply these principles by developing their own strategies or approaches to a given scenario, such as responding to a case study or scenario. It is insufficient to simply describe principles in an essay or exam, observe these skills in others, or have students self-reflect on their leadership style. It is not sufficient to rely on students’ prior experience or personal knowledge of leadership or management to guide the assessment."
+  },
+  {
+    "number": 17,
+    "domain": "Leadership",
+    "statement": "Apply negotiation and mediation skills to address organizational or community challenges",
+    "interpretation": "Students need to know some ways to negotiate/mediate when another party has conflicting interests and/or different desired outcomes from their own and there is a need to come to a common conclusion. Such skills extend beyond the level of negotiating required in a successful intra-group process and assessment must involve more than persuasive communication. It is not sufficient to rely on students’ prior experience or personal knowledge of negotiation and mediation to guide the assessment."
+  },
+  {
+    "number": 18,
+    "domain": "Communication",
+    "statement": "Select communication strategies for different audiences and sectors",
+    "interpretation": "\"Select\" = determine how to communicate with different groups by considering the needs and usual practices of the target audience. Students should be able to discern between different media, consider levels of health literacy, etc. This competency is often conflated with #19, but it is different."
+  },
+  {
+    "number": 19,
+    "domain": "Communication",
+    "statement": "Communicate audience-appropriate public health content, both in writing and through oral presentation to a non-academic, non-peer audience with attention to factors such as literacy and health literacy",
+    "interpretation": "Students should communicate using words and images that are effective, accessible, and understandable for each audience. Students should consider the venues or methods of delivery (e.g., social media, press release, oral presentation, journal article) that best fit the circumstances. An audience of peers/fellow students or an academic audience is not sufficient. One assessment may be sufficient if it has written and oral components, or multiple assessments are needed."
+  },
+  {
+    "number": 20,
+    "domain": "Communication",
+    "statement": "Describe the importance of cultural humility in communicating public health content",
+    "interpretation": "Different from #8 – the focus is on communicating public health content and why cultural humility is an important consideration when crafting public health communications. Students should consider the importance of ensuring that different groups can easily relate to and apply public health information."
+  },
+  {
+    "number": 21,
+    "domain": "Interprofessional and/or Intersectoral Practice",
+    "statement": "Integrate perspectives from other sectors and/or professions to promote and advance population health",
+    "interpretation": "Other sectors and/or professions may include physicians, nurses, pharmacists, and physical therapists, and can extend past the health sciences into education, urban planning, public administration, engineering, housing authorities, the legal system, police departments, and beyond. Students must combine the external sector/profession’s perspective and/or knowledge with their own public health training to complete a task, solve a problem, etc. Must actually interact with individuals in a profession or sector other than public health (in-person or online). Role playing in which public health students assume the identity of an individual from another profession or sector to which they do not already belong is not an acceptable substitute. Not acceptable to solely assess in an internship. The preparation for this assessment should address concepts such as maintaining mutual respect and shared values, knowing your own role and the role of other professions, and communicating effectively with other professions to accomplish goals."
+  },
+  {
+    "number": 22,
+    "domain": "Systems Thinking",
+    "statement": "Apply a systems thinking tool to visually represent a public health issue in a format other than a standard narrative",
+    "interpretation": "Evidence of competency demonstration must be non-narrative. Describing how systems thinking might apply is not sufficient; students must show that they can actually apply systems thinking tools by constructing something like a causal loop diagram, systems archetypes, network analyses, and concept maps. Logic models and evidence tables are not sufficient to address this competency."
+  }
+]
+
+/** How the canned competency review grades each competency, by number. */
+export const MOCK_GRADES: Record<number, CompetencyStatus> = {"1": "ADDRESSED", "3": "ADDRESSED", "4": "ADDRESSED", "2": "PARTIAL", "6": "PARTIAL", "19": "PARTIAL"}
+
+/** Synthetic seed syllabus 01 (fictional instructor), extracted the same way the backend extracts DOCX files. */
+export const SAMPLE_SYLLABUS = "SAMPLE SYLLABUS 01  |  NORTHEAST REGION\n# EPID 601: Applied Epidemiologic Methods\nHarbor State University  |  School of Public Health  |  Boston, Massachusetts\nFall 2026  •  3 graduate credits  •  MPH Core / Epidemiology Concentration\n\n| Class meetings | Tuesdays, 5:30–8:15 p.m. ET / Public Health Building, Room 214 |\n| --- | --- |\n| Instructor | Dr. Maya Chen, PhD, MPH (fictional) / maya.chen@example.edu |\n| Office hours | Thursdays, 12:00–1:30 p.m. ET, by appointment (in person or video) |\n| Prerequisites | Introductory biostatistics or equivalent; graduate standing |\n| Learning platform | Course materials, assignments, and announcements posted to the institutional LMS |\n\n## Course description\nThis graduate-level course introduces epidemiologic reasoning and applied methods for investigating health patterns in populations. Students formulate answerable questions, evaluate observational study designs, calculate and interpret measures of disease frequency and association, assess bias and confounding, and communicate evidence for public health decisions. Examples emphasize urban and regional public health challenges in the northeastern United States, including respiratory illness, housing conditions, and health inequities.\n## Learning outcomes\n- Frame a public health problem as a testable epidemiologic research question.\n- Calculate and interpret incidence, prevalence, risk ratios, odds ratios, and rate ratios.\n- Select and critique cohort, case-control, cross-sectional, and surveillance designs.\n- Assess selection bias, information bias, confounding, effect modification, and causal interpretation.\n- Analyze a de-identified public health dataset using reproducible code and interpret results responsibly.\n- Translate epidemiologic findings into a concise, equity-informed recommendation for a nontechnical audience.\n## Required materials and software\n- Gordis Epidemiology, 7th ed. (Elsevier, 2024), selected chapters; library e-access where available.\n- Instructor-selected peer-reviewed articles and CDC / state health department surveillance reports provided through the LMS.\n- R or RStudio (free) or an instructor-approved equivalent; no prior programming expertise assumed.\n## Assessment and grading\n\n| Assessment | Weight |\n| --- | --- |\n| Weekly problem sets (5 × 6%) | 30% |\n| Critical appraisal memo | 15% |\n| Midterm applied methods exam | 20% |\n| Team surveillance brief and presentation | 15% |\n| Final individual analysis report | 20% |\n\nGrading scale: A 93–100; A− 90–92.9; B+ 87–89.9; B 83–86.9; B− 80–82.9; C 70–79.9; F below 70. Grades are not rounded automatically.\n## Weekly schedule (subject to adjustment)\n\n| Week | Topic | Key deadline |\n| --- | --- | --- |\n| 1 / Sep 1 | Epidemiologic thinking; population health questions | Problem set 1 assigned |\n| 2 / Sep 8 | Measures of disease frequency; denominators | — |\n| 3 / Sep 15 | Descriptive epidemiology and surveillance | Problem set 1 due |\n| 4 / Sep 22 | Cross-sectional and ecologic studies | Problem set 2 assigned |\n| 5 / Sep 29 | Case-control designs; odds ratios | — |\n| 6 / Oct 6 | Cohort designs; risk and rate ratios | Problem set 2 due |\n| 7 / Oct 13 | Bias and measurement error | Critical appraisal memo due |\n| 8 / Oct 20 | Confounding, stratification, and standardization | Midterm exam |\n| 9 / Oct 27 | Effect modification and interaction | Problem set 3 due |\n| 10 / Nov 3 | Causal diagrams and interpretation | — |\n| 11 / Nov 10 | Outbreak investigation and field epidemiology | Problem set 4 due |\n| 12 / Nov 17 | Health equity, structural determinants, ethics | Team brief draft due |\n| 13 / Nov 24 | Applied analysis lab; reproducible workflows | Problem set 5 due |\n| 14 / Dec 1 | Team surveillance brief presentations | Team brief and slides due |\n| 15 / Dec 8 | Evidence translation and course synthesis | Final analysis report due Dec 15 |\n\n## Major assignment expectations\nCritical appraisal memo (1,200–1,500 words): evaluate a published observational study, including design, measures, potential biases, and implications for public health practice. Team surveillance brief (4–5 pages plus a 7-minute presentation): use a publicly available surveillance dataset to describe a regional trend and recommend a feasible response. Final analysis report (2,500–3,000 words plus reproducible code): state a question, document data management, report descriptive and association estimates, discuss limitations, and provide a plain-language interpretation.\n## Course policies\n- Attendance and participation: Students are expected to prepare for and participate in all class meetings. Notify the instructor promptly of unavoidable absences; missed in-class activities may require an alternative reflection.\n- Deadlines: Assignments are due at 11:59 p.m. ET on dates shown in the LMS. Late work loses 5 percentage points per 24-hour period for up to three days unless an extension is approved in advance or an emergency applies.\n- Academic integrity and AI tools: Students may use generative AI for brainstorming, code debugging, or language editing if disclosed in a short methods note. AI-generated citations, fabricated data, and undisclosed submission of AI-written analysis are prohibited. Students remain responsible for verification, originality, and confidentiality.\n- Data privacy: Use only approved de-identified or public datasets. Do not upload protected health information, restricted datasets, or confidential partner information to external AI services.\n- Accessibility and accommodations: Students seeking disability-related accommodations should contact the university accessibility office early; approved accommodations will be implemented without penalty.\n- Respectful learning environment: Discussions of race, place, disability, and inequity should be evidence-based and respectful. Students may disagree with interpretations while engaging constructively.\n## Student support and communication\nThe instructor typically responds to course-related email within two business days. Students are encouraged to use office hours, library research support, quantitative tutoring, and university wellness services. Changes to the schedule will be announced in the LMS with reasonable notice.\nFictional sample for demonstration and testing. Harbor State University, course identifiers, instructor, and contact details are invented; this is not an official institutional syllabus."

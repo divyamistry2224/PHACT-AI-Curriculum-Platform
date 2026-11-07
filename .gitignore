@@ -1,0 +1,30 @@
+# Local OS and editors
+.DS_Store
+~$*
+.claude/
+.idea/
+.vscode/
+# Dependencies, caches, and build output
+node_modules/
+dist/
+build/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.aws-sam/
+cdk.out/
+coverage/
+# Local configuration, generated deployment output and credentials
+.env
+.env.*
+!.env.example
+.phact/
+.aws/
+*.pem
+*.key
+# Local generated artifacts
+*.log
+playwright-report/
+test-results/

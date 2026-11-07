@@ -1,0 +1,1335 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >-
+  PHACT (Public Health AI Curriculum Transformation) MVP. Phase 1: auth, data, API, upload, and read.
+
+Parameters:
+  ModelId:
+    Type: String
+    Default: us.anthropic.claude-sonnet-4-5-20250929-v1:0
+    Description: Cross-region inference profile ID for the Claude model the review workers call.
+  AllowedOrigin:
+    Type: String
+    Default: "*"
+    Description: >-
+      Browser origin allowed to call the API and upload files. Leave "*" until the CloudFront URL exists,
+      then set it to that URL (for example https://d1234abcd.cloudfront.net).
+  RetentionDays:
+    Type: Number
+    Default: 180
+    MinValue: 1
+    Description: >-
+      How long a professor's syllabus and everything in it (uploads, versions, results, records) is kept,
+      counted from the original upload. Approved syllabi in the KB source bucket never expire.
+  EmbeddingModelId:
+    Type: String
+    Default: amazon.titan-embed-text-v2:0
+    Description: Embedding model both knowledge bases use. Its output size must match EmbeddingDimensions.
+  EmbeddingDimensions:
+    Type: Number
+    Default: 1024
+    AllowedValues: [256, 512, 1024]
+    Description: Vector size for Titan Text Embeddings V2. Changing it replaces both vector indexes.
+  WorkerConcurrency:
+    Type: Number
+    Default: 2
+    MinValue: 2
+    MaxValue: 20
+    Description: >-
+      Maximum reviews of each type running at once. Keeps Bedrock calls under the account's throughput
+      limits; extra reviews wait in the queue. (2 is the lowest value SQS triggers allow.)
+  NotificationSenderEmail:
+    Type: String
+    Default: ""
+    Description: >-
+      Verified Amazon SES address that approval and denial emails come from. Leave empty to build the emails
+      without sending them (each decision then records why). Setting it creates the SES identity, and SES
+      emails that address a verification link that must be clicked once.
+
+Conditions:
+  HasNotificationSender: !Not [!Equals [!Ref NotificationSenderEmail, ""]]
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Architectures: [x86_64]
+    MemorySize: 512
+    Timeout: 29
+    Tracing: Active
+    Layers:
+      - !Ref SharedLayer
+    Environment:
+      Variables:
+        SYLLABI_TABLE: !Ref SyllabiTable
+        REVIEWS_TABLE: !Ref ReviewsTable
+        APP_BUCKET: !Ref AppBucket
+        ALLOWED_ORIGIN: !Ref AllowedOrigin
+        RETENTION_DAYS: !Ref RetentionDays
+        GUARDRAIL_ID: !GetAtt Guardrail.GuardrailId
+        GUARDRAIL_VERSION: DRAFT
+        MODEL_ID: !Ref ModelId
+        LOG_LEVEL: INFO
+
+Resources:
+  # ---------------------------------------------------------------- Auth
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UsernameAttributes: [email]
+      AutoVerifiedAttributes: [email]
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 12
+          RequireLowercase: true
+          RequireUppercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      PreventUserExistenceErrors: ENABLED
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+
+  FacultyGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref UserPool
+      GroupName: faculty
+      Description: Faculty members who upload and review syllabi
+
+  AdminGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref UserPool
+      GroupName: admin
+      Description: ASPPH administrators who approve submissions and manage the knowledge bases
+
+  # ---------------------------------------------------------------- Data
+  SyllabiTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      # Feeds DecisionNotifier (approval and denial emails). Adding a stream is an in-place update.
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      SSESpecification:
+        SSEEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - { AttributeName: syllabusId, AttributeType: S }
+        - { AttributeName: ownerId, AttributeType: S }
+        - { AttributeName: createdAt, AttributeType: S }
+        - { AttributeName: queueStatus, AttributeType: S }
+        - { AttributeName: submittedAt, AttributeType: S }
+      KeySchema:
+        - { AttributeName: syllabusId, KeyType: HASH }
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+      GlobalSecondaryIndexes:
+        - IndexName: byOwner
+          KeySchema:
+            - { AttributeName: ownerId, KeyType: HASH }
+            - { AttributeName: createdAt, KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+        - IndexName: adminQueue
+          KeySchema:
+            - { AttributeName: queueStatus, KeyType: HASH }
+            - { AttributeName: submittedAt, KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+
+  ReviewsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - { AttributeName: reviewId, AttributeType: S }
+        - { AttributeName: syllabusId, AttributeType: S }
+        - { AttributeName: createdAt, AttributeType: S }
+      KeySchema:
+        - { AttributeName: reviewId, KeyType: HASH }
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+      GlobalSecondaryIndexes:
+        - IndexName: bySyllabus
+          KeySchema:
+            - { AttributeName: syllabusId, KeyType: HASH }
+            - { AttributeName: createdAt, KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+
+  # Ratings and comments from the Export page. Not syllabus content, so no expiry.
+  FeedbackTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - { AttributeName: feedbackId, AttributeType: S }
+        - { AttributeName: kind, AttributeType: S }
+        - { AttributeName: createdAt, AttributeType: S }
+      KeySchema:
+        - { AttributeName: feedbackId, KeyType: HASH }
+      GlobalSecondaryIndexes:
+        - IndexName: byDate
+          KeySchema:
+            - { AttributeName: kind, KeyType: HASH }
+            - { AttributeName: createdAt, KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+
+  AppBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+            BucketKeyEnabled: true
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      CorsConfiguration:
+        CorsRules:
+          - AllowedMethods: [PUT]
+            AllowedOrigins: [!Ref AllowedOrigin]
+            AllowedHeaders: ["*"]
+            MaxAge: 3000
+      # Everything in this bucket is a professor's working data (faculty/{cognito-sub}/...), so the whole
+      # bucket expires after RetentionDays, matching the DynamoDB TTL on the records. Approved syllabi are
+      # copied to the KB source bucket, which has no lifecycle rules and never expires.
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireFacultyWorkingData
+            Status: Enabled
+            ExpirationInDays: !Ref RetentionDays
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+
+  AppBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AppBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !GetAtt AppBucket.Arn
+              - !Sub "${AppBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+
+  # ---------------------------------------------------------------- Knowledge layer
+  # Source documents for both knowledge bases, separated by prefix:
+  #   ceph/       22 CEPH competency files (KB1), uploaded by deploy.sh
+  #   approved/   admin-approved syllabi (KB2), written by the Approve function
+  # Every change sends an S3 event to the sync queue, and the Sync function starts ingestion.
+  KbSourceBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    DependsOn: SyncQueuePolicy
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+            BucketKeyEnabled: true
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      NotificationConfiguration:
+        QueueConfigurations:
+          - Event: "s3:ObjectCreated:*"
+            Queue: !GetAtt SyncQueue.Arn
+          - Event: "s3:ObjectRemoved:*"
+            Queue: !GetAtt SyncQueue.Arn
+
+  KbSourceBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref KbSourceBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !GetAtt KbSourceBucket.Arn
+              - !Sub "${KbSourceBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+
+  SyncDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      SqsManagedSseEnabled: true
+      MessageRetentionPeriod: 1209600
+
+  # Visibility timeout is six times the Sync function's timeout, as AWS recommends for SQS triggers.
+  SyncQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      SqsManagedSseEnabled: true
+      VisibilityTimeout: 360
+      MessageRetentionPeriod: 86400
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt SyncDeadLetterQueue.Arn
+        maxReceiveCount: 5
+
+  # Lets the KB source bucket send its events to the sync queue. The condition uses the account rather
+  # than the bucket ARN, which would create a circular dependency (the bucket depends on this policy).
+  SyncQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues: [!Ref SyncQueue]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowS3Events
+            Effect: Allow
+            Principal:
+              Service: s3.amazonaws.com
+            Action: sqs:SendMessage
+            Resource: !GetAtt SyncQueue.Arn
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+
+  VectorBucket:
+    Type: AWS::S3Vectors::VectorBucket
+
+  # Both indexes must list the two Bedrock-managed metadata keys as non-filterable, or ingestion fails
+  # (the stack still deploys green). Changing MetadataConfiguration REPLACES the index, which breaks a live
+  # knowledge base, so set it once and never edit it.
+  CephIndex:
+    Type: AWS::S3Vectors::Index
+    Properties:
+      VectorBucketArn: !GetAtt VectorBucket.VectorBucketArn
+      DataType: float32
+      Dimension: !Ref EmbeddingDimensions
+      DistanceMetric: cosine
+      MetadataConfiguration:
+        NonFilterableMetadataKeys:
+          - AMAZON_BEDROCK_TEXT
+          - AMAZON_BEDROCK_METADATA
+
+  SyllabiIndex:
+    Type: AWS::S3Vectors::Index
+    Properties:
+      VectorBucketArn: !GetAtt VectorBucket.VectorBucketArn
+      DataType: float32
+      Dimension: !Ref EmbeddingDimensions
+      DistanceMetric: cosine
+      MetadataConfiguration:
+        NonFilterableMetadataKeys:
+          - AMAZON_BEDROCK_TEXT
+          - AMAZON_BEDROCK_METADATA
+
+  KnowledgeBaseRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: Lets Bedrock Knowledge Bases read source files, call the embedding model, and write vectors
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: bedrock.amazonaws.com
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnLike:
+                aws:SourceArn: !Sub "arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:knowledge-base/*"
+      Policies:
+        - PolicyName: knowledge-base-access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: EmbeddingModel
+                Effect: Allow
+                Action: bedrock:InvokeModel
+                Resource: !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/${EmbeddingModelId}"
+              - Sid: ListSourceBucket
+                Effect: Allow
+                Action: s3:ListBucket
+                Resource: !GetAtt KbSourceBucket.Arn
+                Condition:
+                  StringEquals:
+                    aws:ResourceAccount: !Ref AWS::AccountId
+              - Sid: ReadSourceFiles
+                Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub "${KbSourceBucket.Arn}/*"
+                Condition:
+                  StringEquals:
+                    aws:ResourceAccount: !Ref AWS::AccountId
+              - Sid: VectorIndexes
+                Effect: Allow
+                Action:
+                  - s3vectors:PutVectors
+                  - s3vectors:GetVectors
+                  - s3vectors:DeleteVectors
+                  - s3vectors:QueryVectors
+                  - s3vectors:GetIndex
+                Resource:
+                  - !GetAtt CephIndex.IndexArn
+                  - !GetAtt SyllabiIndex.IndexArn
+
+  CephKnowledgeBase:
+    Type: AWS::Bedrock::KnowledgeBase
+    Properties:
+      Name: !Sub "${AWS::StackName}-ceph-competencies"
+      Description: KB1. CEPH MPH foundational competencies, one document per competency.
+      RoleArn: !GetAtt KnowledgeBaseRole.Arn
+      KnowledgeBaseConfiguration:
+        Type: VECTOR
+        VectorKnowledgeBaseConfiguration:
+          EmbeddingModelArn: !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/${EmbeddingModelId}"
+          EmbeddingModelConfiguration:
+            BedrockEmbeddingModelConfiguration:
+              Dimensions: !Ref EmbeddingDimensions
+              EmbeddingDataType: FLOAT32
+      StorageConfiguration:
+        Type: S3_VECTORS
+        S3VectorsConfiguration:
+          IndexArn: !GetAtt CephIndex.IndexArn
+
+  CephDataSource:
+    Type: AWS::Bedrock::DataSource
+    Properties:
+      KnowledgeBaseId: !Ref CephKnowledgeBase
+      Name: ceph-competency-files
+      DataDeletionPolicy: DELETE
+      DataSourceConfiguration:
+        Type: S3
+        S3Configuration:
+          BucketArn: !GetAtt KbSourceBucket.Arn
+          InclusionPrefixes: [ceph/]
+      VectorIngestionConfiguration:
+        ChunkingConfiguration:
+          ChunkingStrategy: NONE
+
+  SyllabiKnowledgeBase:
+    Type: AWS::Bedrock::KnowledgeBase
+    Properties:
+      Name: !Sub "${AWS::StackName}-approved-syllabi"
+      Description: KB2. Admin-approved revised syllabi, used as peer examples for modernization reviews.
+      RoleArn: !GetAtt KnowledgeBaseRole.Arn
+      KnowledgeBaseConfiguration:
+        Type: VECTOR
+        VectorKnowledgeBaseConfiguration:
+          EmbeddingModelArn: !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/${EmbeddingModelId}"
+          EmbeddingModelConfiguration:
+            BedrockEmbeddingModelConfiguration:
+              Dimensions: !Ref EmbeddingDimensions
+              EmbeddingDataType: FLOAT32
+      StorageConfiguration:
+        Type: S3_VECTORS
+        S3VectorsConfiguration:
+          IndexArn: !GetAtt SyllabiIndex.IndexArn
+
+  SyllabiDataSource:
+    Type: AWS::Bedrock::DataSource
+    Properties:
+      KnowledgeBaseId: !Ref SyllabiKnowledgeBase
+      Name: approved-syllabi
+      DataDeletionPolicy: DELETE
+      DataSourceConfiguration:
+        Type: S3
+        S3Configuration:
+          BucketArn: !GetAtt KbSourceBucket.Arn
+          InclusionPrefixes: [approved/]
+      VectorIngestionConfiguration:
+        ChunkingConfiguration:
+          ChunkingStrategy: FIXED_SIZE
+          FixedSizeChunkingConfiguration:
+            MaxTokens: 300
+            OverlapPercentage: 20
+
+  # ---------------------------------------------------------------- Responsible AI
+  # Checked with the standalone ApplyGuardrail API: on the syllabus at upload and before each review
+  # (INPUT), and on everything the model writes (OUTPUT). Content filters are LOW strength (block only
+  # high-confidence harm) because public health syllabi legitimately cover violence, sexual health, and
+  # substance use. Denied topics are concrete off-topic domains, never "anything that isn't public health".
+  # PII masking here applies to model output only. Input is purged of PII at upload by Comprehend (phact/pii.py).
+  Guardrail:
+    Type: AWS::Bedrock::Guardrail
+    Properties:
+      Name: !Sub "${AWS::StackName}-syllabus-guardrail"
+      Description: Keeps PHACT on its task (reviewing course syllabi) and masks contact details the model writes.
+      BlockedInputMessaging: PHACT reviews public health course syllabi, and this content can't be processed.
+      BlockedOutputsMessaging: PHACT couldn't produce a safe response for this content.
+      ContentPolicyConfig:
+        FiltersConfig:
+          - { Type: HATE, InputStrength: LOW, OutputStrength: LOW }
+          - { Type: INSULTS, InputStrength: LOW, OutputStrength: LOW }
+          - { Type: SEXUAL, InputStrength: LOW, OutputStrength: LOW }
+          - { Type: VIOLENCE, InputStrength: LOW, OutputStrength: LOW }
+          - { Type: MISCONDUCT, InputStrength: LOW, OutputStrength: LOW }
+          - { Type: PROMPT_ATTACK, InputStrength: MEDIUM, OutputStrength: NONE }
+      TopicPolicyConfig:
+        TopicsConfig:
+          - Name: Creative writing
+            Type: DENY
+            Definition: Requests to write fiction, poetry, song lyrics, jokes, or stories that have nothing to do with designing or teaching a course.
+            Examples:
+              - Write me a poem about my cat.
+              - Tell me a bedtime story about a dragon.
+              - Write song lyrics for my band.
+          - Name: Personal finance
+            Type: DENY
+            Definition: Advice about an individual's investing, stocks, cryptocurrency, taxes, loans, or personal budgeting.
+            Examples:
+              - Should I buy more Tesla stock?
+              - How can I lower my taxes this year?
+              - Is bitcoin a good investment right now?
+          - Name: Entertainment and celebrities
+            Type: DENY
+            Definition: Questions about movies, television, music, video games, sports results, or celebrity news.
+            Examples:
+              - Who won the Super Bowl?
+              - Recommend a movie to watch tonight.
+              - What is the latest celebrity gossip?
+          - Name: Individual medical advice
+            Type: DENY
+            Definition: Requests for a diagnosis, treatment, or medication guidance about a specific person's own health condition.
+            Examples:
+              - What should I take for my migraine?
+              - Do these symptoms mean I have diabetes?
+              - How much ibuprofen can I give my son?
+      SensitiveInformationPolicyConfig:
+        PiiEntitiesConfig:
+          - { Type: EMAIL, Action: ANONYMIZE, InputEnabled: false, OutputEnabled: true, OutputAction: ANONYMIZE }
+          - { Type: PHONE, Action: ANONYMIZE, InputEnabled: false, OutputEnabled: true, OutputAction: ANONYMIZE }
+          - { Type: US_SOCIAL_SECURITY_NUMBER, Action: ANONYMIZE, InputEnabled: false, OutputEnabled: true, OutputAction: ANONYMIZE }
+          - { Type: CREDIT_DEBIT_CARD_NUMBER, Action: ANONYMIZE, InputEnabled: false, OutputEnabled: true, OutputAction: ANONYMIZE }
+          - { Type: US_BANK_ACCOUNT_NUMBER, Action: ANONYMIZE, InputEnabled: false, OutputEnabled: true, OutputAction: ANONYMIZE }
+          - { Type: US_PASSPORT_NUMBER, Action: ANONYMIZE, InputEnabled: false, OutputEnabled: true, OutputAction: ANONYMIZE }
+          - { Type: DRIVER_ID, Action: ANONYMIZE, InputEnabled: false, OutputEnabled: true, OutputAction: ANONYMIZE }
+          - { Type: PASSWORD, Action: ANONYMIZE, InputEnabled: false, OutputEnabled: true, OutputAction: ANONYMIZE }
+
+  # ---------------------------------------------------------------- Review queues
+  # One queue per review type. Visibility timeout is six times the worker's 10-minute timeout. A message
+  # that fails twice (the worker crashed or timed out) moves to the dead-letter queue for inspection.
+  CompetencyDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      SqsManagedSseEnabled: true
+      MessageRetentionPeriod: 1209600
+
+  CompetencyQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      SqsManagedSseEnabled: true
+      VisibilityTimeout: 3600
+      MessageRetentionPeriod: 86400
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt CompetencyDeadLetterQueue.Arn
+        maxReceiveCount: 2
+
+  ModernizationDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      SqsManagedSseEnabled: true
+      MessageRetentionPeriod: 1209600
+
+  ModernizationQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      SqsManagedSseEnabled: true
+      VisibilityTimeout: 3600
+      MessageRetentionPeriod: 86400
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ModernizationDeadLetterQueue.Arn
+        maxReceiveCount: 2
+
+  # ---------------------------------------------------------------- API
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: v1
+      TracingEnabled: true
+      Cors:
+        AllowMethods: "'GET,POST,PATCH,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: !Sub "'${AllowedOrigin}'"
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        AddDefaultAuthorizerToCorsPreflight: false
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt UserPool.Arn
+      # Without these, a 401 or 403 from the authorizer reaches the browser without CORS headers and
+      # shows up as a confusing CORS error instead of "not signed in".
+      GatewayResponses:
+        DEFAULT_4XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: !Sub "'${AllowedOrigin}'"
+              Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+        DEFAULT_5XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: !Sub "'${AllowedOrigin}'"
+              Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+
+  # ---------------------------------------------------------------- Shared code
+  SharedLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      Description: PHACT shared code (DynamoDB access, S3 helpers, auth, HTTP responses)
+      ContentUri: backend/shared/
+      CompatibleRuntimes: [python3.12]
+      RetentionPolicy: Delete
+    Metadata:
+      BuildMethod: python3.12
+
+  # ---------------------------------------------------------------- Functions
+  HealthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: GET /health (no sign-in) to confirm the deploy is reachable
+      CodeUri: backend/functions/health/
+      Handler: app.handler
+      MemorySize: 256
+      Events:
+        Health:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /health
+            Method: GET
+            Auth:
+              Authorizer: NONE
+
+  UploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Presigns uploads and creates syllabi (text extraction, version 1)
+      CodeUri: backend/functions/upload/
+      Handler: app.handler
+      MemorySize: 1024
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref AppBucket
+        - DynamoDBWritePolicy:
+            TableName: !Ref SyllabiTable
+        - Statement:
+            - Effect: Allow
+              Action: bedrock:ApplyGuardrail
+              Resource: !GetAtt Guardrail.GuardrailArn
+            - Effect: Allow
+              Action: comprehend:DetectPiiEntities
+              Resource: "*"
+      Events:
+        PresignUpload:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /uploads
+            Method: POST
+        CreateSyllabus:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /syllabi
+            Method: POST
+
+  FacultyReadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Read-only views of the caller's syllabi, versions, and reviews
+      CodeUri: backend/functions/faculty_read/
+      Handler: app.handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref SyllabiTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref ReviewsTable
+        - S3ReadPolicy:
+            BucketName: !Ref AppBucket
+      Events:
+        ListSyllabi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /syllabi
+            Method: GET
+        GetSyllabus:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /syllabi/{id}
+            Method: GET
+        GetVersion:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /syllabi/{id}/versions/{n}
+            Method: GET
+
+  StartCompetencyReviewFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Takes the review lock and queues a competency review
+      CodeUri: backend/functions/start_competency_review/
+      Handler: app.handler
+      MemorySize: 256
+      Environment:
+        Variables:
+          REVIEW_QUEUE_URL: !Ref CompetencyQueue
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SyllabiTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ReviewsTable
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt CompetencyQueue.QueueName
+        - Statement:
+            # Optional run instructions are screened and purged of personal details before they're stored.
+            - Effect: Allow
+              Action: bedrock:ApplyGuardrail
+              Resource: !GetAtt Guardrail.GuardrailArn
+            - Effect: Allow
+              Action: comprehend:DetectPiiEntities
+              Resource: "*"
+      Events:
+        StartCompetencyReview:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /syllabi/{id}/competency-reviews
+            Method: POST
+
+  StartModernizationReviewFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Takes the review lock and queues an AI modernization review
+      CodeUri: backend/functions/start_modernization_review/
+      Handler: app.handler
+      MemorySize: 256
+      Environment:
+        Variables:
+          REVIEW_QUEUE_URL: !Ref ModernizationQueue
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SyllabiTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ReviewsTable
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt ModernizationQueue.QueueName
+        - Statement:
+            # Optional run instructions are screened and purged of personal details before they're stored.
+            - Effect: Allow
+              Action: bedrock:ApplyGuardrail
+              Resource: !GetAtt Guardrail.GuardrailArn
+            - Effect: Allow
+              Action: comprehend:DetectPiiEntities
+              Resource: "*"
+      Events:
+        StartModernizationReview:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /syllabi/{id}/modernization-reviews
+            Method: POST
+
+  CompetencyWorkerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Grades a syllabus against the 22 CEPH competencies (KB1) and revises it
+      CodeUri: backend/functions/competency_worker/
+      Handler: app.handler
+      MemorySize: 1024
+      Timeout: 600
+      Environment:
+        Variables:
+          CEPH_KB_ID: !Ref CephKnowledgeBase
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SyllabiTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ReviewsTable
+        - S3CrudPolicy:
+            BucketName: !Ref AppBucket
+        - Statement:
+            - Sid: ClaudeThroughInferenceProfile
+              Effect: Allow
+              Action: bedrock:InvokeModel
+              Resource:
+                - !Sub "arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/${ModelId}"
+                - "arn:aws:bedrock:*::foundation-model/anthropic.*"
+            - Sid: RetrieveCompetencies
+              Effect: Allow
+              Action: bedrock:Retrieve
+              Resource: !GetAtt CephKnowledgeBase.KnowledgeBaseArn
+            - Sid: Guardrail
+              Effect: Allow
+              Action: bedrock:ApplyGuardrail
+              Resource: !GetAtt Guardrail.GuardrailArn
+      Events:
+        CompetencyQueueMessages:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt CompetencyQueue.Arn
+            BatchSize: 1
+            ScalingConfig:
+              MaximumConcurrency: !Ref WorkerConcurrency
+
+  ModernizationWorkerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Recommends AI and modern-technology changes using approved peer syllabi (KB2) and revises the syllabus
+      CodeUri: backend/functions/modernization_worker/
+      Handler: app.handler
+      MemorySize: 1024
+      Timeout: 600
+      Environment:
+        Variables:
+          SYLLABI_KB_ID: !Ref SyllabiKnowledgeBase
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SyllabiTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ReviewsTable
+        - S3CrudPolicy:
+            BucketName: !Ref AppBucket
+        - Statement:
+            - Sid: ClaudeThroughInferenceProfile
+              Effect: Allow
+              Action: bedrock:InvokeModel
+              Resource:
+                - !Sub "arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/${ModelId}"
+                - "arn:aws:bedrock:*::foundation-model/anthropic.*"
+            - Sid: RetrievePeerExamples
+              Effect: Allow
+              Action: bedrock:Retrieve
+              Resource: !GetAtt SyllabiKnowledgeBase.KnowledgeBaseArn
+            - Sid: Guardrail
+              Effect: Allow
+              Action: bedrock:ApplyGuardrail
+              Resource: !GetAtt Guardrail.GuardrailArn
+      Events:
+        ModernizationQueueMessages:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt ModernizationQueue.Arn
+            BatchSize: 1
+            ScalingConfig:
+              MaximumConcurrency: !Ref WorkerConcurrency
+
+  GetReviewFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Polling endpoint for a review's status, stage, and results
+      CodeUri: backend/functions/get_review/
+      Handler: app.handler
+      MemorySize: 256
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref ReviewsTable
+        - S3ReadPolicy:
+            BucketName: !Ref AppBucket
+      Events:
+        GetReview:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /reviews/{id}
+            Method: GET
+
+  UndoReviewFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Deletes the version a review created and restores the previous one
+      CodeUri: backend/functions/undo_review/
+      Handler: app.handler
+      MemorySize: 256
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SyllabiTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ReviewsTable
+        - S3CrudPolicy:
+            BucketName: !Ref AppBucket
+      Events:
+        UndoReview:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /reviews/{id}/undo
+            Method: POST
+
+  DecideReviewFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Saves the faculty member's accept/decline/edit decisions on a review's suggestions as the next version
+      CodeUri: backend/functions/decide_review/
+      Handler: app.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SyllabiTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ReviewsTable
+        - S3CrudPolicy:
+            BucketName: !Ref AppBucket
+        - Statement:
+            - Effect: Allow
+              Action: bedrock:ApplyGuardrail
+              Resource: !GetAtt Guardrail.GuardrailArn
+            - Effect: Allow
+              Action: comprehend:DetectPiiEntities
+              Resource: "*"
+      Events:
+        Decide:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /reviews/{id}/decisions
+            Method: POST
+
+  SyncFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Starts KB ingestion when files change in the KB source bucket (batched through SQS)
+      CodeUri: backend/functions/sync/
+      Handler: app.handler
+      MemorySize: 256
+      Timeout: 60
+      Environment:
+        Variables:
+          CEPH_KB_ID: !Ref CephKnowledgeBase
+          CEPH_DS_ID: !GetAtt CephDataSource.DataSourceId
+          SYLLABI_KB_ID: !Ref SyllabiKnowledgeBase
+          SYLLABI_DS_ID: !GetAtt SyllabiDataSource.DataSourceId
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: bedrock:StartIngestionJob
+              Resource:
+                - !GetAtt CephKnowledgeBase.KnowledgeBaseArn
+                - !GetAtt SyllabiKnowledgeBase.KnowledgeBaseArn
+      Events:
+        SyncQueueEvents:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt SyncQueue.Arn
+            BatchSize: 100
+            MaximumBatchingWindowInSeconds: 60
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+
+  # ---------------------------------------------------------------- Approval (phase 4)
+  SubmitFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Sends the caller's current working copy to the admin approval queue
+      CodeUri: backend/functions/submit/
+      Handler: app.handler
+      MemorySize: 256
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SyllabiTable
+      Events:
+        Submit:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /syllabi/{id}/submit
+            Method: POST
+
+  AdminReadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Admin approval queue and submission detail (admin group only)
+      CodeUri: backend/functions/admin_read/
+      Handler: app.handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref SyllabiTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref ReviewsTable
+        - S3ReadPolicy:
+            BucketName: !Ref AppBucket
+      Events:
+        Queue:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /admin/queue
+            Method: GET
+        Submission:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /admin/syllabi/{id}
+            Method: GET
+
+  SubmissionSummaryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: AI-written summary of a submission's changes for the admin (admin group only)
+      CodeUri: backend/functions/submission_summary/
+      Handler: app.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SyllabiTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref ReviewsTable
+        - S3ReadPolicy:
+            BucketName: !Ref AppBucket
+        - Statement:
+            - Sid: ClaudeThroughInferenceProfile
+              Effect: Allow
+              Action: bedrock:InvokeModel
+              Resource:
+                - !Sub "arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/${ModelId}"
+                - "arn:aws:bedrock:*::foundation-model/anthropic.*"
+            - Sid: Guardrail
+              Effect: Allow
+              Action: bedrock:ApplyGuardrail
+              Resource: !GetAtt Guardrail.GuardrailArn
+      Events:
+        Summarize:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /admin/syllabi/{id}/summary
+            Method: POST
+
+  ApproveFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Approves a submission, scrubs PII, and copies it into KB2 (admin group only)
+      CodeUri: backend/functions/approve/
+      Handler: app.handler
+      Environment:
+        Variables:
+          KB_BUCKET: !Ref KbSourceBucket
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SyllabiTable
+        - S3ReadPolicy:
+            BucketName: !Ref AppBucket
+        - Statement:
+            - Effect: Allow
+              Action: s3:PutObject
+              Resource: !Sub "${KbSourceBucket.Arn}/approved/*"
+            - Effect: Allow
+              Action: comprehend:DetectPiiEntities
+              Resource: "*"
+      Events:
+        Approve:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /admin/syllabi/{id}/approve
+            Method: POST
+
+  RejectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Denies a submission with a reason the faculty member sees (admin group only)
+      CodeUri: backend/functions/reject/
+      Handler: app.handler
+      MemorySize: 256
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SyllabiTable
+      Events:
+        Reject:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /admin/syllabi/{id}/reject
+            Method: POST
+
+  KbAdminFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Knowledge base status and manual sync (admin group only)
+      CodeUri: backend/functions/kb_admin/
+      Handler: app.handler
+      MemorySize: 256
+      Environment:
+        Variables:
+          KB_BUCKET: !Ref KbSourceBucket
+          CEPH_KB_ID: !Ref CephKnowledgeBase
+          CEPH_DS_ID: !GetAtt CephDataSource.DataSourceId
+          SYLLABI_KB_ID: !Ref SyllabiKnowledgeBase
+          SYLLABI_DS_ID: !GetAtt SyllabiDataSource.DataSourceId
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref KbSourceBucket
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:ListIngestionJobs
+                - bedrock:StartIngestionJob
+              Resource:
+                - !GetAtt CephKnowledgeBase.KnowledgeBaseArn
+                - !GetAtt SyllabiKnowledgeBase.KnowledgeBaseArn
+      Events:
+        ListKnowledgeBases:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /admin/kb
+            Method: GET
+        StartSync:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /admin/kb/sync
+            Method: POST
+
+  FeedbackFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Faculty ratings from the Export page; admin feedback list
+      CodeUri: backend/functions/feedback/
+      Handler: app.handler
+      MemorySize: 256
+      Environment:
+        Variables:
+          FEEDBACK_TABLE: !Ref FeedbackTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FeedbackTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref SyllabiTable
+        - Statement:
+            - Effect: Allow
+              Action: comprehend:DetectPiiEntities
+              Resource: "*"
+      Events:
+        SubmitFeedback:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /feedback
+            Method: POST
+        ListFeedback:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /admin/feedback
+            Method: GET
+
+  # ---------------------------------------------------------------- Decision emails
+  NotificationSenderIdentity:
+    Type: AWS::SES::EmailIdentity
+    Condition: HasNotificationSender
+    Properties:
+      EmailIdentity: !Ref NotificationSenderEmail
+
+  DecisionNotifierFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Emails faculty (via SES) when their submission is approved or denied; triggered by the Syllabi table stream
+      CodeUri: backend/functions/decision_notifier/
+      Handler: app.handler
+      MemorySize: 256
+      Environment:
+        Variables:
+          SENDER_EMAIL: !Ref NotificationSenderEmail
+          APP_URL: !Sub "https://${FrontendDistribution.DomainName}"
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SyllabiTable
+        - Statement:
+            - Effect: Allow
+              Action: ses:SendEmail
+              Resource: "*"
+      Events:
+        ApprovalDecisions:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt SyllabiTable.StreamArn
+            StartingPosition: LATEST
+            BatchSize: 10
+            MaximumRetryAttempts: 3
+            BisectBatchOnFunctionError: true
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+            # Only invoke on PENDING -> APPROVED or DENIED, never on ordinary updates.
+            FilterCriteria:
+              Filters:
+                - Pattern: '{"eventName": ["MODIFY"], "dynamodb": {"OldImage": {"approvalStatus": {"S": ["PENDING"]}}, "NewImage": {"approvalStatus": {"S": ["APPROVED", "DENIED"]}}}}'
+
+  # ---------------------------------------------------------------- Front end hosting (phase 5)
+  # The React app is built by scripts/deploy.sh and uploaded here. The bucket is private; only this
+  # CloudFront distribution can read it (Origin Access Control). The app uses hash routes (/#/dashboard),
+  # so every page is index.html and no rewrite rules are needed. The site gets a random
+  # *.cloudfront.net address; no domain or certificate is required.
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      # SSE-S3 rather than KMS: CloudFront's Origin Access Control can't decrypt with the AWS-managed KMS key.
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+
+  FrontendOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${AWS::StackName}-frontend"
+        Description: Lets the PHACT CloudFront distribution read the front end bucket
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  FrontendDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: !Sub "PHACT front end (${AWS::StackName})"
+        Enabled: true
+        DefaultRootObject: index.html
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        PriceClass: PriceClass_100
+        Origins:
+          - Id: FrontendBucket
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt FrontendOriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+        DefaultCacheBehavior:
+          TargetOriginId: FrontendBucket
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD]
+          CachedMethods: [GET, HEAD]
+          Compress: true
+          # AWS managed policies: CachingOptimized (honors the Cache-Control headers deploy.sh sets on each
+          # file) and SecurityHeadersPolicy (HSTS, nosniff, frame and referrer protections).
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowCloudFrontRead
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "${FrontendBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${FrontendDistribution}"
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !GetAtt FrontendBucket.Arn
+              - !Sub "${FrontendBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+
+Outputs:
+  ApiUrl:
+    Description: Base URL of the PHACT API
+    Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/v1"
+  Region:
+    Value: !Ref AWS::Region
+  UserPoolId:
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Value: !Ref UserPoolClient
+  AppBucketName:
+    Value: !Ref AppBucket
+  SyllabiTableName:
+    Value: !Ref SyllabiTable
+  ReviewsTableName:
+    Value: !Ref ReviewsTable
+  ModelId:
+    Value: !Ref ModelId
+  KbSourceBucketName:
+    Value: !Ref KbSourceBucket
+  CephKnowledgeBaseId:
+    Value: !Ref CephKnowledgeBase
+  CephDataSourceId:
+    Value: !GetAtt CephDataSource.DataSourceId
+  SyllabiKnowledgeBaseId:
+    Value: !Ref SyllabiKnowledgeBase
+  SyllabiDataSourceId:
+    Value: !GetAtt SyllabiDataSource.DataSourceId
+  SyncDeadLetterQueueUrl:
+    Value: !Ref SyncDeadLetterQueue
+  CompetencyDeadLetterQueueUrl:
+    Value: !Ref CompetencyDeadLetterQueue
+  ModernizationDeadLetterQueueUrl:
+    Value: !Ref ModernizationDeadLetterQueue
+  GuardrailId:
+    Value: !GetAtt Guardrail.GuardrailId
+  FeedbackTableName:
+    Value: !Ref FeedbackTable
+  FrontendUrl:
+    Description: Public URL of the PHACT web app
+    Value: !Sub "https://${FrontendDistribution.DomainName}"
+  FrontendBucketName:
+    Value: !Ref FrontendBucket
+  FrontendDistributionId:
+    Value: !Ref FrontendDistribution

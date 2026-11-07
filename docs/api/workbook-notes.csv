@@ -1,0 +1,15 @@
+PHACT front-end API contract,
+,
+What this is,"Every field the front end sends to or receives from the PHACT API, by screen. Names are exact."
+How to use it,"Filter the API Contract tab by Screen, Endpoint, or Status. Field names in column F are what appears in the JSON."
+Status: Built,Deployed in phases 1 and 2. Call it in live mode.
+Status: Planned,"Phases 3 and 4 (shaded rows). Not built yet, but the backend will use exactly these names, so build against them in mock mode now."
+,
+Rules for every request,
+Authorization header,"Send the Cognito ID token, raw, with no ""Bearer "" prefix."
+Role,The ID token's cognito:groups claim contains faculty or admin. Use it to show or hide admin navigation.
+Missing fields,The API leaves out fields that have no value. Treat a missing field as null.
+Errors,"Every error returns {code, message, requestId}. Show message to the user as written."
+Config values,"After deploy, copy them from ASPPH/PHACT/.phact/outputs.json into frontend/.env.local."
+,
+Source,Backend code and README in ASPPH/PHACT/. Architecture doc: PHACT Architecture (MVP).

@@ -1,0 +1,10 @@
+{
+  "description": "A polished, product-focused website that helps visitors understand a brand’s offering, explore its features, and take the next step with confidence.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
