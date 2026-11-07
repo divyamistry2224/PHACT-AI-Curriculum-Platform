@@ -1,10 +1,12 @@
 {
-  "description": "A polished, product-focused website that helps visitors understand a brand’s offering, explore its features, and take the next step with confidence.",
+  "description": "Explore PHACT faculty and administrator curriculum review workflows. Interactive demo with sample data and simulated AI responses.",
   "robots": {
     "index": false
   },
   "accessibility": {
     "addBypassLinks": false,
     "ignoreReducedMotion": false
-  }
+  },
+  "title": "PHACT \u2014 Public Health AI Curriculum Transformation",
+  "language": "en"
 }
