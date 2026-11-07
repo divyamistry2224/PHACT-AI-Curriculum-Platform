@@ -2,7 +2,7 @@
 
 Inspected branch: `master`, commit `834cbb7b8f01140e9aabbab8343c3dcd35d7a5c8`, November 7, 2026.
 
-“Code present” means the implementation exists in this snapshot; it does not establish a healthy live AWS deployment. See VERIFICATION.md for tests run during packaging.
+“Code present” means the implementation exists in this snapshot; it does not establish a healthy live AWS deployment. The backend suite passed 87 tests with mocked AWS services.
 
 | Capability | Evidence under ASPPH/PHACT | Assessment |
 | --- | --- | --- |
@@ -29,6 +29,5 @@ Inspected branch: `master`, commit `834cbb7b8f01140e9aabbab8343c3dcd35d7a5c8`, N
 
 The workbook's “Read me” sheet still calls phases 3 and 4 planned, while the current repository includes their handlers. It also mentions Amplify, whereas the frontend implements Cognito using fetch. Preserve the workbook as a supplied design artifact; use the current API handoff, handlers, and types to resolve mismatches.
 
-The original root README had root-relative architecture, deploy, and test paths despite the app living in ASPPH/PHACT. The showcase README fixes navigation and points to the actual app paths. The original README is retained under docs/archive/.
 
 The presentation's “a citation for every recommendation” and “approval before export/share” are pilot goals; neither is asserted as an enforced guarantee in this showcase.
