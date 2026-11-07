@@ -68,7 +68,7 @@ export function Layout({ user, role, page, menuOpen, setMenuOpen, navigate, onLo
           <button className="menu-button icon-button" onClick={() => setMenuOpen(true)} aria-label="Open menu"><Icon name="menu" /></button>
           <div className="breadcrumb"><span>PHACT</span><Icon name="arrow" size={13} /><b>{current}</b></div>
           <span className="role-switcher">
-            {dataMode === "mock" && <span>Mock mode</span>}
+            {dataMode === "mock" && <span>Demo · simulated AI</span>}
             {role === "faculty" && (
               <span className="notification-wrap">
                 <button className="icon-button notification-button" aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`} onClick={() => setShowNotifications((open) => !open)}>
@@ -99,7 +99,7 @@ export function Layout({ user, role, page, menuOpen, setMenuOpen, navigate, onLo
           </span>
         </header>
         <div className="content page-enter" key={`${page}-${role}`}>{children}</div>
-        <footer><span>PHACT prototype{dataMode === "mock" ? " · Mock mode: sample data in this browser" : ""}</span><span><button onClick={() => navigate("privacy")}>Privacy Policy</button><button onClick={() => navigate("terms")}>Terms of Service</button></span></footer>
+        <footer><span>PHACT{dataMode === "mock" ? " · Public demo with simulated AI responses" : ""}</span><span><button onClick={() => navigate("privacy")}>Privacy Policy</button><button onClick={() => navigate("terms")}>Terms of Service</button></span></footer>
       </main>
       {toast && <div className="toast" role="status"><Icon name="check" />{toast}</div>}
     </div>

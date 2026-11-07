@@ -32,8 +32,8 @@ export function Login({ onLogin }: { onLogin: (user: User) => void }) {
         <small>Developed for the Association of Schools and Programs of Public Health</small>
       </section>
       <section className="signin-form"><form onSubmit={(e) => { e.preventDefault(); signIn(email, password) }}>
-        <p className="eyebrow">Secure sign in</p><h2>Welcome to PHACT</h2>
-        <p>{dataMode === "live" ? "Sign in with the account your PHACT administrator created for you." : "Mock mode: any password works, and nothing leaves this browser."}</p>
+        <p className="eyebrow">{dataMode === "live" ? "Secure sign in" : "Public demonstration"}</p><h2>Welcome to PHACT</h2>
+        <p>{dataMode === "live" ? "Sign in with the account your PHACT administrator created for you." : "Explore the faculty or administrator demo below. Reviews use sample data and simulated AI responses; the hackathon AWS environment has expired."}</p>
         <label>Email address<input type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="faculty@university.edu" required /></label>
         <label>Password<input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={dataMode === "live" ? "Your password" : "Any password in mock mode"} required minLength={dataMode === "live" ? 8 : 1} /></label>
         <ErrorNote>{error}</ErrorNote><button className="primary wide" type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
@@ -41,7 +41,8 @@ export function Login({ onLogin }: { onLogin: (user: User) => void }) {
           <p className="form-note">Demo accounts: <b>faculty@phact.demo</b> and <b>admin@phact.demo</b>. Ask your team lead for the passwords.</p>
         ) : (
           <>
-            <div className="or"><span>or use a demo account</span></div>
+            <p className="form-note"><a href="/sample-syllabus.docx" download>Download a sample syllabus</a> to try the upload and review workflow. Use the role switcher to explore administrator approval.</p>
+            <div className="or"><span>Choose a demo account</span></div>
             <div className="demo-accounts">{DEMO_ACCOUNTS.map((account) => <button key={account.email} type="button" className="demo-account" onClick={() => signIn(account.email, "mock")}><span>{account.name.replace(/^Dr\.\s*/, "").split(" ").map((p) => p[0]).join("").slice(0, 2)}</span><div><b>{account.label}</b><small>{account.name} · {account.email}</small></div><Icon name="arrow" size={15} /></button>)}</div>
           </>
         )}
