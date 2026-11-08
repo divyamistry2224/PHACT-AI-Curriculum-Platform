@@ -16,10 +16,6 @@ PHACT was deployed live on AWS during the three-day AWS Breaking Barriers 2026 h
 
 The public demo uses sample data and simulated AI responses. Changes stay in each visitor's browser; this is an interactive demonstration of the workflows, not a restored AWS backend.
 
-**Local demo: [http://localhost:8443/](http://localhost:8443/)**
-
-Follow the setup instructions below to start PHACT on your computer. The localhost address works while the app is running locally. This demo uses sample data and simulated AI responses.
-
 ## Features
 
 - Upload a PDF, DOCX, or pasted syllabus.
@@ -95,7 +91,7 @@ npx --yes pnpm install --frozen-lockfile
 npx --yes pnpm dev
 ```
 
-Open **http://localhost:8443/** in your browser and keep Terminal running. If Vite reports another port, use the URL it prints. If you already cloned the repository, start from its `ASPPH/PHACT/frontend` folder and skip the clone command.
+Open the development URL printed by Vite in your browser and keep Terminal running. If you already cloned the repository, start from its `ASPPH/PHACT/frontend` folder and skip the clone command.
 
 The default configuration uses mock data without AWS. See the [application README](ASPPH/PHACT/README.md) for live API configuration, backend tests, and deployment.
 
