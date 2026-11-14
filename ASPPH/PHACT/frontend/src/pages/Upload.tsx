@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
-import { REVIEW_STAGES, api } from "../api"
+import { REVIEW_STAGES, api, dataMode } from "../api"
+import { SAMPLE_SYLLABUS } from "../mocks/fixtures/data"
 import type { CompetencyResults, ModernizationResults } from "../types"
 import { EmptyState, ErrorNote, Icon, JobBadge, PageHeader, Status, errorText, fmtDateTime } from "../components/ui"
 import { useReview, useSyllabus, type AppCtx } from "../components/workspace"
@@ -34,12 +35,23 @@ export function Upload({ ctx }: { ctx: AppCtx }) {
     const problem = validateFile(f)
     setFileError(problem)
     setFile(problem ? null : f)
+    if (!problem) { setManual(false); setText("") }
     if (!problem && !title) setTitle(f.name.replace(/\.(pdf|docx)$/i, "").replace(/[-_]+/g, " "))
   }
   const remove = () => {
     setFile(null)
     setFileError("")
     if (input.current) input.current.value = ""
+  }
+
+  const loadExample = () => {
+    remove()
+    setManual(true)
+    setText(SAMPLE_SYLLABUS)
+    setTitle("EPID 601: Applied Epidemiologic Methods")
+    setInstitution("Harbor State University")
+    setDescription("A fictional MPH epidemiology course used in the PHACT demonstration.")
+    setError("")
   }
 
   const pasted = manual && text.trim().length > 0
@@ -74,6 +86,13 @@ export function Upload({ ctx }: { ctx: AppCtx }) {
       <div className="upload-grid">
         <section className="panel upload-panel">
           <div className="section-heading"><span>01</span><div><h2>Syllabus</h2><p>Upload a PDF or DOCX (up to {MAX_MB} MB) or paste your syllabus text.</p></div></div>
+          {dataMode === "mock" && <div className="selection-summary">
+            <p className="eyebrow">Try the PHACT example</p>
+            <h3>EPID 601: Applied Epidemiologic Methods</h3>
+            <p>Load the fictional Harbor State University syllabus, then run the competency review. The full text and course details will be filled in below.</p>
+            <div className="button-row"><button type="button" className="secondary small" onClick={loadExample} disabled={busy}>Load example syllabus</button><a href={`${import.meta.env.BASE_URL}sample-syllabus.docx`} download>Download syllabus (DOCX)</a></div>
+            <p className="form-note">Try the full workflow: review competency gaps → accept or edit suggestions → explore AI recommendations → save and export → submit for administrator approval. Reviews use simulated AI responses.</p>
+          </div>}
           {!file ? (
             <div
               role="button"

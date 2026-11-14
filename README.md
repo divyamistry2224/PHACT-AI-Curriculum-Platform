@@ -16,6 +16,18 @@ PHACT was deployed live on AWS during the three-day AWS Breaking Barriers 2026 h
 
 The live demo uses sample data and simulated AI responses. Changes stay in each visitor's browser; this is an interactive demonstration of the workflows, not a restored AWS backend.
 
+## Try the example syllabus
+
+**[Download the example syllabus (DOCX)](https://divyamistry2224.github.io/PHACT-AI-Curriculum-Platform/sample-syllabus.docx)** — EPID 601: Applied Epidemiologic Methods, a fictional MPH course at Harbor State University used in the PHACT demo.
+
+1. [Open the live demo](https://divyamistry2224.github.io/PHACT-AI-Curriculum-Platform/) and choose **Faculty member**.
+2. Open **Upload a syllabus** and click **Load example syllabus**. The full example text and course details are filled in for you. You can also download the DOCX and upload it yourself.
+3. Click **Upload and Run Competency Review**, review the competency gaps, and accept, decline, or edit suggested changes.
+4. Explore AI recommendations, save your revised syllabus, and export it as DOCX or PDF.
+5. Submit it for approval, then use the role switcher to choose **Administrator** and review the submission.
+
+The demo simulates AI reviews in your browser. Loading the example uses its actual syllabus text; uploading other files in this demo uses the same sample content rather than extracting the uploaded document.
+
 ## Features
 
 - Upload a PDF, DOCX, or pasted syllabus.

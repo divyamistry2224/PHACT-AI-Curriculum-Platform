@@ -41,7 +41,8 @@ export function Login({ onLogin }: { onLogin: (user: User) => void }) {
           <p className="form-note">Demo accounts: <b>faculty@phact.demo</b> and <b>admin@phact.demo</b>. Ask your team lead for the passwords.</p>
         ) : (
           <>
-            <p className="form-note"><a href={`${import.meta.env.BASE_URL}sample-syllabus.docx`} download>Download a sample syllabus</a> to try the upload and review workflow. Use the role switcher to explore administrator approval.</p>
+            <p className="form-note">Try our example: <b>EPID 601: Applied Epidemiologic Methods</b>, a fictional Harbor State University syllabus. <a href={`${import.meta.env.BASE_URL}sample-syllabus.docx`} download>Download the syllabus (DOCX)</a>.</p>
+            <ol className="form-note"><li>Choose <b>Faculty member</b> below and open <b>Upload a syllabus</b>.</li><li>Click <b>Load example syllabus</b>, then <b>Upload and Run Competency Review</b>.</li><li>Review suggestions, explore AI recommendations, save and export your revision, then submit it for approval.</li><li>Switch to <b>Administrator</b> to review the submission.</li></ol>
             <div className="or"><span>Choose a demo account</span></div>
             <div className="demo-accounts">{DEMO_ACCOUNTS.map((account) => <button key={account.email} type="button" className="demo-account" onClick={() => signIn(account.email, "mock")}><span>{account.name.replace(/^Dr\.\s*/, "").split(" ").map((p) => p[0]).join("").slice(0, 2)}</span><div><b>{account.label}</b><small>{account.name} · {account.email}</small></div><Icon name="arrow" size={15} /></button>)}</div>
           </>
