@@ -8,16 +8,16 @@ const DEMO_ACCOUNTS = [
   { email: "admin@phact.demo", label: "ASPPH Administrator", name: "ASPPH Administrator" },
 ]
 
-export function Login({ onLogin }: { onLogin: (user: User) => void }) {
+export function Login({ onLogin }: { onLogin: (user: User, example?: boolean) => void }) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [busy, setBusy] = useState(false)
-  const signIn = async (address: string, secret: string) => {
+  const signIn = async (address: string, secret: string, example = false) => {
     setError("")
     setBusy(true)
     try {
-      onLogin(await api.signIn(address, secret))
+      onLogin(await api.signIn(address, secret), example)
     } catch (e) {
       setError(errorText(e))
     } finally {
@@ -41,6 +41,8 @@ export function Login({ onLogin }: { onLogin: (user: User) => void }) {
           <p className="form-note">Demo accounts: <b>faculty@phact.demo</b> and <b>admin@phact.demo</b>. Ask your team lead for the passwords.</p>
         ) : (
           <>
+            <button className="secondary wide" type="button" disabled={busy} onClick={() => signIn("faculty@phact.demo", "mock", true)}>Open completed example: recommendations & changes</button>
+            <p className="form-note">The completed example includes the original syllabus, two competency suggestions, three AI recommendations, and a revised syllabus with all changes accepted. Review outputs are simulated.</p>
             <p className="form-note">Try our example: <b>EPID 601: Applied Epidemiologic Methods</b>, a fictional Harbor State University syllabus. <a href={`${import.meta.env.BASE_URL}sample-syllabus.docx`} download>Download the syllabus (DOCX)</a>.</p>
             <ol className="form-note"><li>Choose <b>Faculty member</b> below and open <b>Upload a syllabus</b>.</li><li>Click <b>Load example syllabus</b>, then <b>Upload and Run Competency Review</b>.</li><li>Review suggestions, explore AI recommendations, save and export your revision, then submit it for approval.</li><li>Switch to <b>Administrator</b> to review the submission.</li></ol>
             <div className="or"><span>Choose a demo account</span></div>

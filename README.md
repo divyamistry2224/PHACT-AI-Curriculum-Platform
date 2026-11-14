@@ -18,6 +18,13 @@ The live demo uses sample data and simulated AI responses. Changes stay in each 
 
 ## Try the example syllabus
 
+Choose **Open completed example: recommendations & changes** on the [live demo](https://divyamistry2224.github.io/PHACT-AI-Curriculum-Platform/) to inspect a fully worked example immediately. It includes the original syllabus (version 1), two accepted competency changes (version 2), and three accepted AI recommendations (version 3). Use the example buttons to inspect recommendations, compare the original and revised syllabus, or export the final version. These are simulated demonstration outputs, not a recorded live AI run.
+
+- **Competency changes:** add a community briefing and an equity reflection.
+- **AI recommendations and resulting edits:** audit AI-drafted code with a prompt/correction log, add an individual oral defense, and discuss AI bias in surveillance data.
+
+To run through the workflow yourself:
+
 **[Download the example syllabus (DOCX)](https://divyamistry2224.github.io/PHACT-AI-Curriculum-Platform/sample-syllabus.docx)** — EPID 601: Applied Epidemiologic Methods, a fictional MPH course at Harbor State University used in the PHACT demo.
 
 1. [Open the live demo](https://divyamistry2224.github.io/PHACT-AI-Curriculum-Platform/) and choose **Faculty member**.

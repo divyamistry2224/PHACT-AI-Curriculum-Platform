@@ -145,8 +145,8 @@ function modernizationOutput(text: string): Proposed<ModernizationResults> {
     { title: "Oral defense of the surveillance brief", category: "ASSESSMENT_TOOLS", approach: "AI_RESISTANT", target: "Final project", recommendation: "Add a 10-minute oral defense where each student explains one design decision in their team's brief.", rationale: "Confirms individual understanding regardless of how the written brief was produced.", peerExamples: [], hunkIds: [] },
     { title: "AI and bias in surveillance data", category: "CONTENT_ENHANCEMENT", approach: "INTEGRATE_AI", target: "Health equity module", recommendation: "Add a case discussion on how algorithmic tools can amplify gaps in surveillance data.", rationale: "Connects AI literacy to the course's equity content.", peerExamples: [], hunkIds: [] },
   ]
-  const revised = `${text}\n\n## Responsible AI use (added by AI modernization review)\nYou may use AI assistants for drafting code. Keep a log of prompts and every correction you make; the log is part of your grade.\n\n## Oral defense (added by AI modernization review)\nEach student defends one design decision from the final brief in a 10-minute conversation with the instructor.`
-  return { results: { recommendations, peerExamplesAvailable: 4 }, revised, excerpts: [["Keep a log of prompts and every correction you make"], ["Each student defends one design decision from the final brief"], []] }
+  const revised = `${text}\n\n## Responsible AI use (added by AI modernization review)\nYou may use AI assistants for drafting code. Keep a log of prompts and every correction you make; the log is part of your grade.\n\n## Oral defense (added by AI modernization review)\nEach student defends one design decision from the final brief in a 10-minute conversation with the instructor.\n\n## AI and bias in surveillance data (added by AI modernization review)\nDiscuss a case where an algorithm undercounts a community. Identify missing data, explain who could be harmed, and propose checks before using its predictions.`
+  return { results: { recommendations, peerExamplesAvailable: 4 }, revised, excerpts: [["Keep a log of prompts and every correction you make"], ["Each student defends one design decision from the final brief"], ["Discuss a case where an algorithm undercounts a community"]] }
 }
 
 /** Advance a running review based on elapsed time; when it finishes, add its version to the syllabus. */
@@ -208,7 +208,41 @@ function decide(syllabusId: string, status: ApprovalStatus, fields: Partial<Syll
   return adminSummary(s)
 }
 
+// A completed, clearly labeled example is available in every visitor's browser.
+// Keep existing uploads and decisions intact when introducing it to returning visitors.
+export const COMPLETED_EXAMPLE_ID = "phact-completed-epid601-example-v1"
+function seedCompletedExample() {
+  if (store.syllabi[COMPLETED_EXAMPLE_ID]) return
+  const createdAt = new Date(Date.now() - 60_000).toISOString()
+  const syllabus: StoredSyllabus = {
+    ownerId: USERS.faculty.userId, ownerEmail: USERS.faculty.email,
+    summary: { syllabusId: COMPLETED_EXAMPLE_ID, title: "EPID 601: Applied Epidemiologic Methods — worked example", institution: "Harbor State University (fictional)", description: "Completed demonstration: original syllabus, competency suggestions, AI recommendations, and revised versions. All review outputs are simulated.", sourceType: "DOCX", currentVersion: 1, approvalStatus: "NONE", createdAt, updatedAt: createdAt, expiresAt: new Date(Date.now() + 180 * 86400_000).toISOString() },
+    versions: [{ n: 1, source: "UPLOAD", createdAt, text: SAMPLE_SYLLABUS }],
+  }
+  store.syllabi[COMPLETED_EXAMPLE_ID] = syllabus
+  for (const reviewType of ["COMPETENCY", "MODERNIZATION"] as const) {
+    const reviewId = `${COMPLETED_EXAMPLE_ID}-${reviewType}`
+    const review: StoredReview = { summary: { reviewId, syllabusId: COMPLETED_EXAMPLE_ID, reviewType, jobStatus: "QUEUED", inputVersion: syllabus.summary.currentVersion, createdAt, guidance: "Completed worked example with simulated AI output. All suggested edits were accepted to show the resulting syllabus." } }
+    store.reviews[reviewId] = review
+    advance(review)
+    const results = review.results!
+    const hunks = Object.fromEntries(results.hunks.map((h) => [h.id, h]))
+    const accepted = Object.fromEntries(results.hunks.map((h) => [h.id, h.after]))
+    const items = reviewType === "COMPETENCY"
+      ? (results as CompetencyResults).changes.map((c) => ({ title: c.change, reason: c.reason, hunkIds: c.hunkIds }))
+      : (results as ModernizationResults).recommendations.map((r) => ({ title: r.title, reason: r.rationale, hunkIds: r.hunkIds }))
+    const acceptedSuggestions = items.filter((item) => item.hunkIds.length).map(({ title, reason }) => ({ title, reason, edited: false }))
+    const n = syllabus.summary.currentVersion + 1
+    syllabus.versions.push({ n, source: reviewType, reviewId, createdAt: now(), text: compose(review.pieces!, hunks, accepted) })
+    syllabus.summary.currentVersion = n
+    delete syllabus.summary.pendingReviewId
+    Object.assign(review.summary, { outputVersion: n, decidedAt: now(), decision: { changesAccepted: results.hunks.length, changesDeclined: 0, changesEdited: 0, suggestionsAccepted: acceptedSuggestions.length, suggestionsDeclined: 0 }, acceptedHunks: results.hunks.map((h) => ({ hunkId: h.id, edited: false })), acceptedSuggestions })
+  }
+  save()
+}
+
 export function createMockApi(): PhactApi {
+  seedCompletedExample()
   return {
     mode: "mock",
     currentUser,
