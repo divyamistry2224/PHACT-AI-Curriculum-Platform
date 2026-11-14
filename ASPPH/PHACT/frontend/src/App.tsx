@@ -105,11 +105,10 @@ function PhactApp() {
   const effectivePage: Page = canAccessRoute(route, role) ? route.id : homeFor(role)
   const ctx: AppCtx = { user, navigate, toast: setToast, activeSyllabusId, openSyllabus, activeReviewId, watchReview }
   const content = <>
-    {dataMode === "mock" && role === "faculty" && <section className="panel" style={{ marginBottom: "1rem" }}>
-      <p className="eyebrow">Completed worked example · simulated AI</p>
-      <h2>See what changed in EPID 601</h2>
-      <p>Version 1: original syllabus → Version 2: community briefing and equity reflection → Version 3: AI code audit, oral defense, and an AI bias discussion. All suggested edits were accepted in this example.</p>
-      <div className="button-row"><button className="secondary small" onClick={() => openSyllabus(COMPLETED_EXAMPLE_ID, "competency")}>See competency suggestions</button><button className="primary small" onClick={() => openSyllabus(COMPLETED_EXAMPLE_ID, "recommendations")}>See AI recommendations</button><button className="secondary small" onClick={() => openSyllabus(COMPLETED_EXAMPLE_ID, "review")}>Compare original & revised</button><button className="secondary small" onClick={() => openSyllabus(COMPLETED_EXAMPLE_ID, "export")}>Export revised syllabus</button></div>
+    {dataMode === "mock" && role === "faculty" && <section className="example-toolbar" aria-labelledby="example-title">
+      <div className="example-toolbar-heading"><h2 id="example-title">EPID 601 · Worked example</h2><span className="example-toolbar-badge">Simulated AI</span></div>
+      <p className="example-toolbar-description">Original syllabus → competency edits → AI recommendations. Explore all three versions and the accepted changes.</p>
+      <div className="example-toolbar-actions"><button className="secondary small" onClick={() => openSyllabus(COMPLETED_EXAMPLE_ID, "competency")}>Competency suggestions</button><button className="primary small" onClick={() => openSyllabus(COMPLETED_EXAMPLE_ID, "recommendations")}>AI recommendations</button><button className="secondary small" onClick={() => openSyllabus(COMPLETED_EXAMPLE_ID, "review")}>Compare versions</button><button className="secondary small" onClick={() => openSyllabus(COMPLETED_EXAMPLE_ID, "export")}>Export syllabus</button></div>
     </section>}
 
     {effectivePage === "dashboard" && <Dashboard ctx={ctx} />}

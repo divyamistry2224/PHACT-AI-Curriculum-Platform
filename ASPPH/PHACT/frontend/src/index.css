@@ -48,7 +48,7 @@
 
 @layer base {
   html { background: var(--canvas); color: var(--ink); scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
-  body { min-width: 320px; background: var(--canvas); color: var(--ink); font-family: 'Source Sans 3', 'Source Sans Pro', ui-sans-serif, system-ui, sans-serif; font-size: 16px; line-height: 1.5; font-feature-settings: 'tnum' 0; }
+  body { min-width: 320px; background: var(--canvas); color: var(--ink); font-family: 'Source Sans 3', 'Source Sans Pro', ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.5; font-feature-settings: 'tnum' 0; }
   button, select { cursor: pointer; }
   button:disabled { cursor: not-allowed; opacity: .45; }
   h1, h2, h3, p { margin: 0; }
@@ -112,8 +112,8 @@ footer button:hover { color: var(--ink); }
 /* ---------- Page header & type helpers ---------- */
 .page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s5); margin-bottom: var(--s6); }
 .page-header > div { max-width: 720px; }
-.page-header h1 { margin: var(--s1) 0 var(--s2); }
-.page-header > div > p:last-child { color: var(--muted); font-size: 15px; max-width: 660px; }
+.page-header h1 { font-size: 28px; line-height: 1.2; margin: var(--s1) 0 var(--s2); }
+.page-header > div > p:last-child { color: var(--muted); font-size: 14px; max-width: 660px; }
 .page-header > button { flex: none; }
 .eyebrow { color: var(--accent); font-size: 12px; font-weight: 600; letter-spacing: .01em; }
 .muted { color: var(--muted); }
@@ -890,3 +890,20 @@ td small { display: block; color: var(--muted); font-size: 12px; }
 
 .email-status { display: flex !important; align-items: center; gap: 6px; margin-top: var(--s2) !important; font-size: 12px !important; color: var(--muted) !important; }
 .email-status.sent svg { color: var(--accent); }
+
+/* Compact navigation for the completed example. */
+.example-toolbar { margin-bottom: 24px; padding: 16px 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.example-toolbar-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.example-toolbar-heading h2 { font-size: 15px; font-weight: 600; line-height: 1.4; letter-spacing: 0; }
+.example-toolbar-badge { padding: 2px 7px; border-radius: 4px; background: var(--accent-soft); color: var(--accent-dark); font-size: 11px; font-weight: 500; line-height: 1.5; }
+.example-toolbar-description { max-width: 760px; margin-top: 5px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.example-toolbar-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.example-toolbar-actions button { height: 30px; padding: 0 11px; font-size: 12px; font-weight: 500; box-shadow: none; }
+.example-toolbar-actions .primary { border: 1px solid var(--accent-dark); background: var(--accent-dark); color: white; }
+.example-toolbar-actions .primary:hover { background: var(--phact-navy); border-color: var(--phact-navy); }
+@media (max-width: 600px) {
+  .example-toolbar { padding: 14px; margin-bottom: 20px; }
+  .example-toolbar-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .example-toolbar-actions button { height: auto; min-height: 36px; padding: 6px 8px; white-space: normal; text-align: center; line-height: 1.35; }
+  .page-header h1 { font-size: 25px; }
+}
