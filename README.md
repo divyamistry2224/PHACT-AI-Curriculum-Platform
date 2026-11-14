@@ -6,15 +6,13 @@ I worked with my team to build PHACT, an application that helps public health ed
 
 Built during **AWS Breaking Barriers 2026** with **Team 34 — Health PHACTory**.
 
-[Public demo](https://phact-curriculum-demo.wise-tapir-6197.chatgpt.site) · [Presentation](docs/presentation/PHACT_Presentation_v13.pptx) · [API contract](docs/api/PHACT_API_Contract.xlsx)
+[GitHub project](https://github.com/divyamistry2224/PHACT-AI-Curriculum-Platform) · [Presentation](docs/presentation/PHACT_Presentation_v13.pptx) · [API contract](docs/api/PHACT_API_Contract.xlsx)
 
-## Demo availability
+## Project availability
 
 PHACT was deployed live on AWS during the three-day AWS Breaking Barriers 2026 hackathon. The temporary AWS session has since ended, so that original AWS deployment is no longer available.
 
-**[Open the public demo](https://phact-curriculum-demo.wise-tapir-6197.chatgpt.site)** — no installation or AWS account required. Choose a faculty or administrator demo account on the welcome screen. A sample syllabus is available to download there.
-
-The public demo uses sample data and simulated AI responses. Changes stay in each visitor's browser; this is an interactive demonstration of the workflows, not a restored AWS backend.
+**[View the project on GitHub](https://github.com/divyamistry2224/PHACT-AI-Curriculum-Platform)** for the application source, architecture, and setup instructions. To explore the application with mock data without AWS, follow [Run locally](#run-locally) below.
 
 ## Features
 
